@@ -4,15 +4,19 @@
 //!
 //! # Tables
 //!
-//! | Table        | Size    | Used in encoding | Used in decoding | By engines |
-//! | ------------ | ------- | ---------------- | ---------------- | ---------- |
-//! | [`Exp`]      | 128 kiB | yes              | yes              | all        |
-//! | [`Log`]      | 128 kiB | yes              | yes              | all        |
-//! | [`LogWalsh`] | 128 kiB | -                | yes              | all        |
-//! | [`Mul16`]    | 8 MiB   | yes              | yes              | [`NoSimd`] |
-//! | [`Skew`]     | 128 kiB | yes              | yes              | all        |
+//! | Table        | Size    | Used in encoding | Used in decoding | By engines         |
+//! | ------------ | ------- | ---------------- | ---------------- | ------------------ |
+//! | [`Exp`]      | 128 kiB | yes              | yes              | all                |
+//! | [`Log`]      | 128 kiB | yes              | yes              | all                |
+//! | [`LogWalsh`] | 128 kiB | -                | yes              | all                |
+//! | [`Mul16`]    | 8 MiB   | yes              | yes              | [`NoSimd`]         |
+//! | [`Mul128`]   | 8 MiB   | yes              | yes              | [`Avx2`] [`Ssse3`] |
+//! | [`Skew`]     | 128 kiB | yes              | yes              | all                |
 //!
 //! [`NoSimd`]: crate::engine::NoSimd
+//! [`Avx2`]: crate::engine::Avx2
+//! [`Ssse3`]: crate::engine::Ssse3
+//!
 
 use once_cell::sync::OnceCell;
 
@@ -46,6 +50,20 @@ pub type Mul16 = [[[GfElement; 16]; 4]; GF_ORDER];
 /// Used by all [`Engine`]:s for FFT and IFFT.
 pub type Skew = [GfElement; GF_MODULUS as usize];
 
+/// Elements of the Mul128 table
+#[derive(Clone, Debug)]
+pub struct Multiply128lutT {
+    /// Lower half of GfElements
+    pub lo: [u128; 4],
+    /// Upper half of GfElements
+    pub hi: [u128; 4],
+}
+
+/// Used by [`Avx2`] and [`Ssse3`] engine for multiplications.
+///
+/// [`Avx2`]: crate::engine::Avx2
+pub type Mul128 = [Multiply128lutT; GF_ORDER];
+
 // ======================================================================
 // ExpLog - PRIVATE
 
@@ -60,6 +78,7 @@ struct ExpLog {
 static EXP_LOG: OnceCell<ExpLog> = OnceCell::new();
 static LOG_WALSH: OnceCell<Box<LogWalsh>> = OnceCell::new();
 static MUL16: OnceCell<Box<Mul16>> = OnceCell::new();
+static MUL128: OnceCell<Box<Mul128>> = OnceCell::new();
 static SKEW: OnceCell<Box<Skew>> = OnceCell::new();
 
 // ======================================================================
@@ -156,6 +175,39 @@ pub fn initialize_mul16() -> &'static Mul16 {
         }
 
         mul16.into_boxed_slice().try_into().unwrap()
+    })
+}
+
+/// Initializes and returns [`Mul128`] table.
+pub fn initialize_mul128() -> &'static Mul128 {
+    // Based on:
+    // https://github.com/catid/leopard/blob/22ddc7804998d31c8f1a2617ee720e063b1fa6cd/LeopardFF16.cpp#L375
+    MUL128.get_or_init(|| {
+        let (exp, log) = initialize_exp_log();
+
+        let mut mul128 = vec![
+            Multiply128lutT {
+                lo: [0; 4],
+                hi: [0; 4],
+            };
+            GF_ORDER
+        ];
+
+        for log_m in 0..=GF_MODULUS {
+            for i in 0..=3 {
+                let mut prod_lo = [0u8; 16];
+                let mut prod_hi = [0u8; 16];
+                for x in 0..16 {
+                    let prod = mul((x << (i * 4)) as GfElement, log_m, exp, log);
+                    prod_lo[x] = prod as u8;
+                    prod_hi[x] = (prod >> 8) as u8;
+                }
+                mul128[log_m as usize].lo[i] = bytemuck::cast(prod_lo);
+                mul128[log_m as usize].hi[i] = bytemuck::cast(prod_hi);
+            }
+        }
+
+        mul128.into_boxed_slice().try_into().unwrap()
     })
 }
 

@@ -46,8 +46,21 @@ pub(crate) use self::shards::Shards;
 
 pub use self::{engine_naive::Naive, engine_nosimd::NoSimd, shards::ShardsRefMut};
 
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+pub use self::{engine_avx2::Avx2, engine_default_x86::DefaultEngine, engine_ssse3::Ssse3};
+
 mod engine_naive;
 mod engine_nosimd;
+
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+mod engine_ssse3;
+
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+mod engine_avx2;
+
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+mod engine_default_x86;
+
 mod shards;
 
 pub mod tables;
@@ -79,7 +92,8 @@ pub const CANTOR_BASIS: [GfElement; GF_BITS] = [
 /// Galois field element.
 pub type GfElement = u16;
 
-/// Default [`Engine`], currently just alias to [`NoSimd`].
+/// Default [`Engine`], currently just alias to [`NoSimd`] on non-x86.
+#[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
 pub type DefaultEngine = NoSimd;
 
 // ======================================================================
