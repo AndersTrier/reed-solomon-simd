@@ -168,7 +168,7 @@ This crate only uses `unsafe` code in the [`Ssse3`] and [`Avx2`] [`Engine`]s.
 
 ## Credits
 
-This crate is a fork Markus Laire's [`reed-solomon-16`] crate, which in turn
+This crate is a fork of Markus Laire's [`reed-solomon-16`] crate, which in turn
 is based on [Leopard-RS] by Christopher A. Taylor.
 
 [Leopard-RS]: https://github.com/catid/leopard
