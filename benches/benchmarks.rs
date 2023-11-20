@@ -95,7 +95,9 @@ fn benchmarks_main(c: &mut Criterion) {
         let max_original_loss_count = std::cmp::min(original_count, recovery_count);
 
         for loss_percent in [1, 100] {
-            let original_loss_count = max_original_loss_count * loss_percent / 100;
+            // We round up to make sure at least one shard is lost for low shard counts.
+            // '+ 99' as div_ceil() is not in stable yet (int_roundings #88581).
+            let original_loss_count = (max_original_loss_count * loss_percent + 99) / 100;
             let original_provided_count = original_count - original_loss_count;
             let recovery_provided_count = original_loss_count;
 
