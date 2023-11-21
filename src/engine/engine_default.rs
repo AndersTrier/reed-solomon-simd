@@ -1,25 +1,31 @@
-use crate::engine::{Avx2, Engine, GfElement, NoSimd, ShardsRefMut, Ssse3, GF_ORDER};
+use crate::engine::{Engine, GfElement, NoSimd, ShardsRefMut, GF_ORDER};
+
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+use crate::engine::{Avx2, Ssse3};
 
 // ======================================================================
 // DefaultEngine - PUBLIC
 
-/// [`Engine`] that on x86 platforms at runtime chooses the best Engine.
+/// [`Engine`] that at runtime selects the best Engine.
 pub struct DefaultEngine(Box<dyn Engine>);
 
 impl DefaultEngine {
     /// Creates new [`DefaultEngine`] by chosing and initializing the underlying engine.
     ///
-    /// The engine is chosen in the following order of preference:
+    /// On x86(-64) the engine is chosen in the following order of preference:
     /// 1. [`Avx2`]
     /// 2. [`Ssse3`]
     /// 3. [`NoSimd`]
     pub fn new() -> Self {
-        if is_x86_feature_detected!("avx2") {
-            return DefaultEngine(Box::new(Avx2::new()));
-        }
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        {
+            if is_x86_feature_detected!("avx2") {
+                return DefaultEngine(Box::new(Avx2::new()));
+            }
 
-        if is_x86_feature_detected!("ssse3") {
-            return DefaultEngine(Box::new(Ssse3::new()));
+            if is_x86_feature_detected!("ssse3") {
+                return DefaultEngine(Box::new(Ssse3::new()));
+            }
         }
 
         DefaultEngine(Box::new(NoSimd::new()))
@@ -51,12 +57,15 @@ impl Engine for DefaultEngine {
     }
 
     fn fwht(data: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        if is_x86_feature_detected!("avx2") {
-            return Avx2::fwht(data, truncated_size);
-        }
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        {
+            if is_x86_feature_detected!("avx2") {
+                return Avx2::fwht(data, truncated_size);
+            }
 
-        if is_x86_feature_detected!("ssse3") {
-            return Ssse3::fwht(data, truncated_size);
+            if is_x86_feature_detected!("ssse3") {
+                return Ssse3::fwht(data, truncated_size);
+            }
         }
 
         NoSimd::fwht(data, truncated_size)
@@ -78,12 +87,15 @@ impl Engine for DefaultEngine {
     }
 
     fn xor(x: &mut [u8], y: &[u8]) {
-        if is_x86_feature_detected!("avx2") {
-            return Avx2::xor(x, y);
-        }
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        {
+            if is_x86_feature_detected!("avx2") {
+                return Avx2::xor(x, y);
+            }
 
-        if is_x86_feature_detected!("ssse3") {
-            return Ssse3::xor(x, y);
+            if is_x86_feature_detected!("ssse3") {
+                return Ssse3::xor(x, y);
+            }
         }
 
         NoSimd::xor(x, y)

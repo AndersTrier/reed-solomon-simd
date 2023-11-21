@@ -16,25 +16,13 @@
 //!     - Simple reference implementation.
 //! - [`NoSimd`]
 //!     - Basic optimized engine without SIMD so that it works on all CPUs.
+//! - [`Avx2`]
+//!     - Optimized engine that takes advantage of the x86(-64) AVX2 SIMD instructions.
+//! - [`Ssse3`]
+//!     - Optimized engine that takes advantage of the x86(-64) SSSE3 SIMD instructions.
 //! - [`DefaultEngine`]
 //!     - Default engine which is used when no specific engine is given.
-//!     - Currently just alias to [`NoSimd`].
-//!
-//! # Benchmarks
-//!
-//! - These benchmarks are from `cargo bench engine`
-//!   with 3.4 GHz i5-3570K (Ivy Bridge, 3rd gen.).
-//! - Shards are 1024 bytes.
-//!
-//! | Benchmark         | Shards  | ns [`Naive`] | ns [`NoSimd`] |
-//! | ----------------- | ------- | ------------ | ------------- |
-//! | xor               | 1 * 2   | 60           | 32            |
-//! | mul               | 1       | 1 260        | 860           |
-//! | xor_within        | 128 * 2 | 5 870        | 5 780         |
-//! | formal_derivative | 128     | 21 300       | 15 800        |
-//! | FFT               | 128     | 764 000      | 545 000       |
-//! | IFFT              | 128     | 780 000      | 546 000       |
-//! | FWHT              | -       | 898 000      | 622 000       |
+//!     - Automatically selects best engine at runtime.
 //!
 //! [simple usage]: crate#simple-usage
 //! [basic usage]: crate#basic-usage
@@ -44,18 +32,19 @@
 
 pub(crate) use self::shards::Shards;
 
-pub use self::{engine_naive::Naive, engine_nosimd::NoSimd, shards::ShardsRefMut};
+pub use self::{
+    engine_default::DefaultEngine, engine_naive::Naive, engine_nosimd::NoSimd, shards::ShardsRefMut,
+};
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-pub use self::{engine_avx2::Avx2, engine_default_x86::DefaultEngine, engine_ssse3::Ssse3};
+pub use self::{engine_avx2::Avx2, engine_ssse3::Ssse3};
 
+mod engine_default;
 mod engine_naive;
 mod engine_nosimd;
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod engine_avx2;
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-mod engine_default_x86;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod engine_ssse3;
 
@@ -89,10 +78,6 @@ pub const CANTOR_BASIS: [GfElement; GF_BITS] = [
 
 /// Galois field element.
 pub type GfElement = u16;
-
-/// Default [`Engine`], currently just alias to [`NoSimd`] on non-x86.
-#[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
-pub type DefaultEngine = NoSimd;
 
 // ======================================================================
 // FUNCTIONS - PUBLIC - Galois field operations
