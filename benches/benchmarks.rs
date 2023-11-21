@@ -129,11 +129,11 @@ fn benchmarks_main(c: &mut Criterion) {
 // BENCHMARKS - RATE
 
 fn benchmarks_rate(c: &mut Criterion) {
-    // benchmarks_rate_one(c, "rate-Naive", Naive::new());
-    benchmarks_rate_one(c, "rate", DefaultEngine::new());
+    // benchmarks_rate_one(c, "rate-Naive", Naive::new);
+    benchmarks_rate_one(c, "rate", DefaultEngine::new);
 }
 
-fn benchmarks_rate_one<E: Engine>(c: &mut Criterion, name: &str, engine: E) {
+fn benchmarks_rate_one<E: Engine>(c: &mut Criterion, name: &str, new_engine: fn() -> E) {
     let mut group = c.benchmark_group(name);
     group.sample_size(10);
 
@@ -166,7 +166,7 @@ fn benchmarks_rate_one<E: Engine>(c: &mut Criterion, name: &str, engine: E) {
             original_count,
             recovery_count,
             SHARD_BYTES,
-            engine.clone(),
+            new_engine(),
             None,
         )
         .unwrap();
@@ -190,7 +190,7 @@ fn benchmarks_rate_one<E: Engine>(c: &mut Criterion, name: &str, engine: E) {
             original_count,
             recovery_count,
             SHARD_BYTES,
-            engine.clone(),
+            new_engine(),
             None,
         )
         .unwrap();
@@ -220,7 +220,7 @@ fn benchmarks_rate_one<E: Engine>(c: &mut Criterion, name: &str, engine: E) {
             original_count,
             recovery_count,
             SHARD_BYTES,
-            engine.clone(),
+            new_engine(),
             None,
         )
         .unwrap();
@@ -249,7 +249,7 @@ fn benchmarks_rate_one<E: Engine>(c: &mut Criterion, name: &str, engine: E) {
             original_count,
             recovery_count,
             SHARD_BYTES,
-            engine.clone(),
+            new_engine(),
             None,
         )
         .unwrap();

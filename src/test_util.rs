@@ -137,7 +137,7 @@ pub(crate) fn roundtrip<R: Rate<E>, E: Engine, T: IntOrRange>(
 }
 
 pub(crate) fn roundtrip_single<R: Rate<E>, E: Engine, T: IntOrRange>(
-    engine: E,
+    new_engine: fn() -> E,
     original_count: usize,
     recovery_count: usize,
     shard_bytes: usize,
@@ -150,13 +150,19 @@ pub(crate) fn roundtrip_single<R: Rate<E>, E: Engine, T: IntOrRange>(
         original_count,
         recovery_count,
         shard_bytes,
-        engine.clone(),
+        new_engine(),
         None,
     )
     .unwrap();
 
-    let mut decoder =
-        R::decoder(original_count, recovery_count, shard_bytes, engine, None).unwrap();
+    let mut decoder = R::decoder(
+        original_count,
+        recovery_count,
+        shard_bytes,
+        new_engine(),
+        None,
+    )
+    .unwrap();
 
     roundtrip::<R, E, T>(
         &mut encoder,
@@ -181,7 +187,7 @@ macro_rules! roundtrip_single {
      $seed: expr $(,)?
     ) => {
         crate::test_util::roundtrip_single::<$Rate<_>, _, _>(
-            crate::engine::Naive::new(),
+            crate::engine::Naive::new,
             $original_count,
             $recovery_count,
             $shard_bytes,
@@ -192,7 +198,7 @@ macro_rules! roundtrip_single {
         );
 
         crate::test_util::roundtrip_single::<$Rate<_>, _, _>(
-            crate::engine::NoSimd::new(),
+            crate::engine::NoSimd::new,
             $original_count,
             $recovery_count,
             $shard_bytes,

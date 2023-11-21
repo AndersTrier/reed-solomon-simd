@@ -46,7 +46,7 @@ macro_rules! roundtrip {
             $loss_indexes,
             $encoder_work,
             $decoder_work,
-            Naive::new(),
+            Naive::new,
         )
         .unwrap();
 
@@ -58,7 +58,7 @@ macro_rules! roundtrip {
             $loss_indexes,
             $encoder_work,
             $decoder_work,
-            NoSimd::new(),
+            NoSimd::new,
         )
         .unwrap();
 
@@ -188,7 +188,7 @@ fn roundtrip<E, R>(
     loss_indexes: &FixedBitSet,
     encoder_work: &mut Option<EncoderWork>,
     decoder_work: &mut Option<DecoderWork>,
-    engine: E,
+    new_engine: fn() -> E,
 ) -> Result<Vec<Vec<u8>>, Error>
 where
     E: Engine,
@@ -200,7 +200,7 @@ where
         original_count,
         recovery_count,
         shard_bytes,
-        engine.clone(),
+        new_engine(),
         encoder_work.take(),
     )?;
 
@@ -218,7 +218,7 @@ where
         original_count,
         recovery_count,
         shard_bytes,
-        engine,
+        new_engine(),
         decoder_work.take(),
     )?;
 

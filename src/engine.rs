@@ -149,10 +149,7 @@ pub fn checked_next_multiple_of(a: usize, b: usize) -> Option<usize> {
 ///
 /// [`Naive`] engine is provided for those who want to
 /// study the source code to understand [`Engine`].
-pub trait Engine: Clone
-where
-    Self: Sized,
-{
+pub trait Engine {
     // ============================================================
     // REQUIRED
 
@@ -184,7 +181,9 @@ where
     ///   [`Engine::eval_poly`] returns correct result.
     ///
     /// [`initialize_log_walsh`]: self::tables::initialize_log_walsh
-    fn fwht(data: &mut [GfElement; GF_ORDER], truncated_size: usize);
+    fn fwht(data: &mut [GfElement; GF_ORDER], truncated_size: usize)
+    where
+        Self: Sized;
 
     /// In-place decimation-in-time IFFT (inverse fast Fourier transform).
     ///
@@ -210,13 +209,18 @@ where
     fn mul(&self, x: &mut [u8], log_m: GfElement);
 
     /// `x[] ^= y[]`
-    fn xor(x: &mut [u8], y: &[u8]);
+    fn xor(x: &mut [u8], y: &[u8])
+    where
+        Self: Sized;
 
     // ============================================================
     // PROVIDED
 
     /// Evaluate polynomial.
-    fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
+    fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize)
+    where
+        Self: Sized,
+    {
         let log_walsh = tables::initialize_log_walsh::<Self>();
 
         Self::fwht(erasures, truncated_size);
@@ -242,7 +246,10 @@ where
     }
 
     /// Formal derivative.
-    fn formal_derivative(data: &mut ShardsRefMut) {
+    fn formal_derivative(data: &mut ShardsRefMut)
+    where
+        Self: Sized,
+    {
         for i in 1..data.len() {
             let width: usize = ((i ^ (i - 1)) + 1) >> 1;
             Self::xor_within(data, i - width, i, width);
@@ -265,7 +272,10 @@ where
     ///
     /// Ranges must not overlap.
     #[inline(always)]
-    fn xor_within(data: &mut ShardsRefMut, x: usize, y: usize, count: usize) {
+    fn xor_within(data: &mut ShardsRefMut, x: usize, y: usize, count: usize)
+    where
+        Self: Sized,
+    {
         let (xs, ys) = data.flat2_mut(x, y, count);
         Self::xor(xs, ys);
     }
