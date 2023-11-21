@@ -20,6 +20,8 @@
 //!     - Optimized engine that takes advantage of the x86(-64) AVX2 SIMD instructions.
 //! - [`Ssse3`]
 //!     - Optimized engine that takes advantage of the x86(-64) SSSE3 SIMD instructions.
+//! - [`Neon`]
+//!     - Optimized engine that takes advantage of the AArch64 Neon SIMD instructions.
 //! - [`DefaultEngine`]
 //!     - Default engine which is used when no specific engine is given.
 //!     - Automatically selects best engine at runtime.
@@ -39,6 +41,9 @@ pub use self::{
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub use self::{engine_avx2::Avx2, engine_ssse3::Ssse3};
 
+#[cfg(target_arch = "aarch64")]
+pub use self::engine_neon::Neon;
+
 mod engine_default;
 mod engine_naive;
 mod engine_nosimd;
@@ -47,6 +52,9 @@ mod engine_nosimd;
 mod engine_avx2;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod engine_ssse3;
+
+#[cfg(target_arch = "aarch64")]
+mod engine_neon;
 
 mod shards;
 

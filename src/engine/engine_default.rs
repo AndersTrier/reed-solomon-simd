@@ -3,6 +3,9 @@ use crate::engine::{Engine, GfElement, NoSimd, ShardsRefMut, GF_ORDER};
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 use crate::engine::{Avx2, Ssse3};
 
+#[cfg(target_arch = "aarch64")]
+use crate::engine::Neon;
+
 // ======================================================================
 // DefaultEngine - PUBLIC
 
@@ -16,6 +19,10 @@ impl DefaultEngine {
     /// 1. [`Avx2`]
     /// 2. [`Ssse3`]
     /// 3. [`NoSimd`]
+    ///
+    /// On AArch64 the engine is chosen in the following order of preference:
+    /// 1. [`Neon`]
+    /// 2. [`NoSimd`]
     pub fn new() -> Self {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
@@ -25,6 +32,13 @@ impl DefaultEngine {
 
             if is_x86_feature_detected!("ssse3") {
                 return DefaultEngine(Box::new(Ssse3::new()));
+            }
+        }
+
+        #[cfg(target_arch = "aarch64")]
+        {
+            if std::arch::is_aarch64_feature_detected!("neon") {
+                return DefaultEngine(Box::new(Neon::new()));
             }
         }
 
@@ -68,6 +82,13 @@ impl Engine for DefaultEngine {
             }
         }
 
+        #[cfg(target_arch = "aarch64")]
+        {
+            if std::arch::is_aarch64_feature_detected!("neon") {
+                return Neon::fwht(data, truncated_size);
+            }
+        }
+
         NoSimd::fwht(data, truncated_size)
     }
 
@@ -95,6 +116,13 @@ impl Engine for DefaultEngine {
 
             if is_x86_feature_detected!("ssse3") {
                 return Ssse3::xor(x, y);
+            }
+        }
+
+        #[cfg(target_arch = "aarch64")]
+        {
+            if std::arch::is_aarch64_feature_detected!("neon") {
+                return Neon::xor(x, y);
             }
         }
 
