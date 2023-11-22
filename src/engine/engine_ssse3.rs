@@ -149,18 +149,19 @@ impl Ssse3 {
 
             let clr_mask = _mm_set1_epi8(0x0f);
 
-            let mut data_1 = _mm_srli_epi64(value_lo, 4);
-            let mut data_0 = _mm_and_si128(value_lo, clr_mask);
-            data_1 = _mm_and_si128(data_1, clr_mask);
+            let data_0 = _mm_and_si128(value_lo, clr_mask);
             prod_lo = _mm_shuffle_epi8(t0_lo, data_0);
             prod_hi = _mm_shuffle_epi8(t0_hi, data_0);
+
+            let data_1 = _mm_and_si128(_mm_srli_epi64(value_lo, 4), clr_mask);
             prod_lo = _mm_xor_si128(prod_lo, _mm_shuffle_epi8(t1_lo, data_1));
             prod_hi = _mm_xor_si128(prod_hi, _mm_shuffle_epi8(t1_hi, data_1));
-            data_0 = _mm_and_si128(value_hi, clr_mask);
-            data_1 = _mm_srli_epi64(value_hi, 4);
-            data_1 = _mm_and_si128(data_1, clr_mask);
+
+            let data_0 = _mm_and_si128(value_hi, clr_mask);
             prod_lo = _mm_xor_si128(prod_lo, _mm_shuffle_epi8(t2_lo, data_0));
             prod_hi = _mm_xor_si128(prod_hi, _mm_shuffle_epi8(t2_hi, data_0));
+
+            let data_1 = _mm_and_si128(_mm_srli_epi64(value_hi, 4), clr_mask);
             prod_lo = _mm_xor_si128(prod_lo, _mm_shuffle_epi8(t3_lo, data_1));
             prod_hi = _mm_xor_si128(prod_hi, _mm_shuffle_epi8(t3_hi, data_1));
         }
