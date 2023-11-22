@@ -160,18 +160,19 @@ impl Avx2 {
 
             let clr_mask = _mm256_set1_epi8(0x0f);
 
-            let mut data_1 = _mm256_srli_epi64(value_lo, 4);
-            let mut data_0 = _mm256_and_si256(value_lo, clr_mask);
-            data_1 = _mm256_and_si256(data_1, clr_mask);
+            let data_0 = _mm256_and_si256(value_lo, clr_mask);
             prod_lo = _mm256_shuffle_epi8(t0_lo, data_0);
             prod_hi = _mm256_shuffle_epi8(t0_hi, data_0);
+
+            let data_1 = _mm256_and_si256(_mm256_srli_epi64(value_lo, 4), clr_mask);
             prod_lo = _mm256_xor_si256(prod_lo, _mm256_shuffle_epi8(t1_lo, data_1));
             prod_hi = _mm256_xor_si256(prod_hi, _mm256_shuffle_epi8(t1_hi, data_1));
-            data_0 = _mm256_and_si256(value_hi, clr_mask);
-            data_1 = _mm256_srli_epi64(value_hi, 4);
-            data_1 = _mm256_and_si256(data_1, clr_mask);
+
+            let data_0 = _mm256_and_si256(value_hi, clr_mask);
             prod_lo = _mm256_xor_si256(prod_lo, _mm256_shuffle_epi8(t2_lo, data_0));
             prod_hi = _mm256_xor_si256(prod_hi, _mm256_shuffle_epi8(t2_hi, data_0));
+
+            let data_1 = _mm256_and_si256(_mm256_srli_epi64(value_hi, 4), clr_mask);
             prod_lo = _mm256_xor_si256(prod_lo, _mm256_shuffle_epi8(t3_lo, data_1));
             prod_hi = _mm256_xor_si256(prod_hi, _mm256_shuffle_epi8(t3_hi, data_1));
         }
