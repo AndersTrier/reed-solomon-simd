@@ -37,15 +37,23 @@ Up to 65535 original or recovery shards is also possible with following limitati
 
 | Original : Recovery | Encode       | Decode (1% loss; 100% loss) |
 | ------------------- | ------------ | --------------------------- |
-| 64: 64              | 7.1111 GiB/s | 264.10 MiB/s ; 261.10 MiB/s |
-| 128 : 128           | 5.5354 GiB/s | 464.81 MiB/s ; 461.00 MiB/s |
-| 100 : 1 000         | 5.1622 GiB/s | 600.51 MiB/s ; 600.01 MiB/s |
-| 1 000 : 100         | 4.2336 GiB/s | 746.80 MiB/s ; 749.49 MiB/s |
-| 1 000 : 1 000       | 3.6074 GiB/s | 1.0584 GiB/s ; 1.0471 GiB/s |
-| 1 000 : 10 000      | 3.1045 GiB/s | 769.13 MiB/s ; 793.63 MiB/s |
-| 10 000 : 1 000      | 2.4273 GiB/s | 718.68 MiB/s ; 730.49 MiB/s |
-| 10 000 : 10 000     | 1.9195 GiB/s | 453.12 MiB/s ; 443.75 MiB/s |
-| 32 768 : 32 768     | 1.4868 GiB/s | 621.78 MiB/s ; 603.40 MiB/s |
+| 32: 32              | 8.1620 GiB/s | 142.15 MiB/s ; 140.92 MiB/s |
+| 64: 64              | 7.1111 GiB/s | 269.38 MiB/s ; 264.23 MiB/s |
+| 128 : 128           | 6.0587 GiB/s | 464.81 MiB/s ; 461.00 MiB/s |
+| 256 : 256           | 4.8129 GiB/s | 722.03 MiB/s ; 713.58 MiB/s |
+| 512 : 512           | 4.4636 GiB/s | 933.61 MiB/s ; 951.46 MiB/s |
+| 1024 : 1024         | 4.0020 GiB/s | 1.0406 GiB/s ; 1.0822 GiB/s |
+| 2048 : 2048         | 3.6136 GiB/s | 1.0911 GiB/s ; 1.0717 GiB/s |
+| 4096 : 4096         | 3.3064 GiB/s | 1021.3 MiB/s ; 1.0121 GiB/s |
+| 8192 : 8192         | 2.4810 GiB/s | 826.11 MiB/s ; 848.25 MiB/s |
+| 16384 : 16384       | 1.9838 GiB/s | 638.29 MiB/s ; 629.38 MiB/s |
+| 32 768 : 32 768     | 1.5097 GiB/s | 633.63 MiB/s ; 620.33 MiB/s |
+| 128 : 1 024         | 5.2813 GiB/s | 653.76 MiB/s ; 654.03 MiB/s |
+| 1 000 : 100         | 4.5012 GiB/s | 752.63 MiB/s ; 749.68 MiB/s |
+| 1 000 : 10 000      | 3.3454 GiB/s | 789.79 MiB/s ; 793.63 MiB/s |
+| 8 192 : 57 344      | 2.0460 GiB/s | 659.14 MiB/s ; 646.76 MiB/s |
+| 10 000 : 1 000      | 2.4339 GiB/s | 718.68 MiB/s ; 736.28 MiB/s |
+| 57 344 : 8 192      | 1.7021 GiB/s | 614.19 MiB/s ; 616.58 MiB/s |
 
 - Single core AVX2 on an AMD Ryzen 5 3600 (Zen 2, 2019).
 - On an Apple Silicon M1 CPU throughput is about the same (+-10%).
