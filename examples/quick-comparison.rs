@@ -15,6 +15,11 @@ const SHARD_BYTES: usize = 1024;
 // MAIN
 
 fn main() {
+    #[cfg(debug_assertions)]
+    {
+        panic!("Refusing to benchmark as we're running in debug mode. Please run like this instead: cargo run --release --example quick-comparison");
+    }
+
     println!("                           µs (init)   µs (encode)   µs (decode)");
     println!("                           ---------   -----------   -----------");
 
