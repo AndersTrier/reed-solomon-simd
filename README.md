@@ -208,25 +208,25 @@ is based on [Leopard-RS] by Christopher A. Taylor.
 [Leopard-RS]: https://github.com/catid/leopard
 [reed-solomon-simd]: https://github.com/AndersTrier/reed-solomon-simd
 
-[`Naive`]: https://docs.rs/reed-solomon-simd/2.0.0/reed_solomon_simd/engine/struct.Naive.html
-[`NoSimd`]: https://docs.rs/reed-solomon-simd/2.0.0/reed_solomon_simd/engine/struct.NoSimd.html
-[`Ssse3`]: https://docs.rs/reed-solomon-simd/2.0.0/reed_solomon_simd/engine/struct.Ssse3.html
-[`Avx2`]: https://docs.rs/reed-solomon-simd/2.0.0/reed_solomon_simd/engine/struct.Avx2.html
-[`Neon`]: https://docs.rs/reed-solomon-simd/2.0.0/reed_solomon_simd/engine/struct.Neon.html
+[`Naive`]: https://docs.rs/reed-solomon-simd/2.1.0/reed_solomon_simd/engine/struct.Naive.html
+[`NoSimd`]: https://docs.rs/reed-solomon-simd/2.1.0/reed_solomon_simd/engine/struct.NoSimd.html
+[`Ssse3`]: https://docs.rs/reed-solomon-simd/2.1.0/reed_solomon_simd/engine/struct.Ssse3.html
+[`Avx2`]: https://docs.rs/reed-solomon-simd/2.1.0/reed_solomon_simd/engine/struct.Avx2.html
+[`Neon`]: https://docs.rs/reed-solomon-simd/2.1.0/reed_solomon_simd/engine/struct.Neon.html
 
-[`ReedSolomonEncoder`]: https://docs.rs/reed-solomon-simd/2.0.0/reed_solomon_simd/struct.ReedSolomonEncoder.html
-[RSE::add_original_shard]: https://docs.rs/reed-solomon-simd/2.0.0/reed_solomon_simd/struct.ReedSolomonEncoder.html#method.add_original_shard
-[RSE::encode]: https://docs.rs/reed-solomon-simd/2.0.0/reed_solomon_simd/struct.ReedSolomonEncoder.html#method.encode
+[`ReedSolomonEncoder`]: https://docs.rs/reed-solomon-simd/2.1.0/reed_solomon_simd/struct.ReedSolomonEncoder.html
+[RSE::add_original_shard]: https://docs.rs/reed-solomon-simd/2.1.0/reed_solomon_simd/struct.ReedSolomonEncoder.html#method.add_original_shard
+[RSE::encode]: https://docs.rs/reed-solomon-simd/2.1.0/reed_solomon_simd/struct.ReedSolomonEncoder.html#method.encode
 
-[`ReedSolomonDecoder`]: https://docs.rs/reed-solomon-simd/2.0.0/reed_solomon_simd/struct.ReedSolomonDecoder.html
-[RSD::add_original_shard]: https://docs.rs/reed-solomon-simd/2.0.0/reed_solomon_simd/struct.ReedSolomonDecoder.html#method.add_original_shard
-[RSD::add_recovery_shard]: https://docs.rs/reed-solomon-simd/2.0.0/reed_solomon_simd/struct.ReedSolomonDecoder.html#method.add_recovery_shard
-[RSD::decode]: https://docs.rs/reed-solomon-simd/2.0.0/reed_solomon_simd/struct.ReedSolomonDecoder.html#method.decode
+[`ReedSolomonDecoder`]: https://docs.rs/reed-solomon-simd/2.1.0/reed_solomon_simd/struct.ReedSolomonDecoder.html
+[RSD::add_original_shard]: https://docs.rs/reed-solomon-simd/2.1.0/reed_solomon_simd/struct.ReedSolomonDecoder.html#method.add_original_shard
+[RSD::add_recovery_shard]: https://docs.rs/reed-solomon-simd/2.1.0/reed_solomon_simd/struct.ReedSolomonDecoder.html#method.add_recovery_shard
+[RSD::decode]: https://docs.rs/reed-solomon-simd/2.1.0/reed_solomon_simd/struct.ReedSolomonDecoder.html#method.decode
 
-[`Engine`]: https://docs.rs/reed-solomon-simd/2.0.0/reed_solomon_simd/engine/trait.Engine.html
-[`Rate`]: https://docs.rs/reed-solomon-simd/2.0.0/reed_solomon_simd/rate/trait.Rate.html
+[`Engine`]: https://docs.rs/reed-solomon-simd/2.1.0/reed_solomon_simd/engine/trait.Engine.html
+[`Rate`]: https://docs.rs/reed-solomon-simd/2.1.0/reed_solomon_simd/rate/trait.Rate.html
 
-[mod:rate]: https://docs.rs/reed-solomon-simd/2.0.0/reed_solomon_simd/rate/index.html
+[mod:rate]: https://docs.rs/reed-solomon-simd/2.1.0/reed_solomon_simd/rate/index.html
 
-[`reed_solomon_simd::encode`]: https://docs.rs/reed-solomon-simd/2.0.0/reed_solomon_simd/fn.encode.html
-[`reed_solomon_simd::decode`]: https://docs.rs/reed-solomon-simd/2.0.0/reed_solomon_simd/fn.decode.html
+[`reed_solomon_simd::encode`]: https://docs.rs/reed-solomon-simd/2.1.0/reed_solomon_simd/fn.encode.html
+[`reed_solomon_simd::decode`]: https://docs.rs/reed-solomon-simd/2.1.0/reed_solomon_simd/fn.decode.html
