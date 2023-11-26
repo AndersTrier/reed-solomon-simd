@@ -27,9 +27,6 @@ impl NoSimd {
         let mul16 = tables::initialize_mul16();
         let skew = tables::initialize_skew();
 
-        // This is used in `Engine::eval_poly`.
-        tables::initialize_log_walsh::<Self>();
-
         Self { mul16, skew }
     }
 }
