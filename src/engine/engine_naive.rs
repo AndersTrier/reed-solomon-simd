@@ -32,9 +32,6 @@ impl Naive {
         let (exp, log) = tables::initialize_exp_log();
         let skew = tables::initialize_skew();
 
-        // This is used in `Engine::eval_poly`.
-        tables::initialize_log_walsh::<Self>();
-
         Self { exp, log, skew }
     }
 }

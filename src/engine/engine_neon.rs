@@ -33,9 +33,6 @@ impl Neon {
         let mul128 = tables::initialize_mul128();
         let skew = tables::initialize_skew();
 
-        // This is used in `Engine::eval_poly`.
-        tables::initialize_log_walsh::<Self>();
-
         Self { mul128, skew }
     }
 }
