@@ -218,9 +218,8 @@ pub trait Engine {
 
         Self::fwht(erasures, truncated_size);
 
-        for i in 0..GF_ORDER {
-            erasures[i] = (((erasures[i] as usize) * (log_walsh[i] as usize))
-                % (GF_MODULUS as usize)) as GfElement;
+        for (e, factor) in std::iter::zip(erasures.iter_mut(), log_walsh.iter()) {
+            *e = ((u32::from(*e) * u32::from(*factor)) % u32::from(GF_MODULUS)) as GfElement;
         }
 
         Self::fwht(erasures, GF_ORDER);
