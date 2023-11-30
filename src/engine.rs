@@ -93,14 +93,14 @@ pub type GfElement = u16;
 /// Some kind of addition.
 #[inline(always)]
 pub fn add_mod(x: GfElement, y: GfElement) -> GfElement {
-    let sum: usize = (x as usize) + (y as usize);
+    let sum = u32::from(x) + u32::from(y);
     (sum + (sum >> GF_BITS)) as GfElement
 }
 
 /// Some kind of subtraction.
 #[inline(always)]
 pub fn sub_mod(x: GfElement, y: GfElement) -> GfElement {
-    let dif: usize = (x as usize).wrapping_sub(y as usize);
+    let dif = u32::from(x).wrapping_sub(u32::from(y));
     dif.wrapping_add(dif >> GF_BITS) as GfElement
 }
 
