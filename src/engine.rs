@@ -90,18 +90,37 @@ pub type GfElement = u16;
 // ======================================================================
 // FUNCTIONS - PUBLIC - Galois field operations
 
-/// Some kind of addition.
+/// Addition mod [`GF_MODULUS`] (2**16 - 1)
 #[inline(always)]
 pub fn add_mod(x: GfElement, y: GfElement) -> GfElement {
     let sum = u32::from(x) + u32::from(y);
-    (sum + (sum >> GF_BITS)) as GfElement
+
+    // Did we wrap 2**16? If so, add 1.
+    // For some reason, using u32 is faster than using u16 with
+    // (sum, did_wrap) = x.overflowing_add(y)
+    if sum > u32::from(GfElement::MAX) {
+        sum as GfElement + 1
+    } else {
+        sum as GfElement
+    }
+    // Alternative way to do the same (slower in my testing):
+    // (sum + (sum >> GF_BITS)) as GfElement
 }
 
-/// Some kind of subtraction.
+/// Subtraction mod [`GF_MODULUS`] (2**16 - 1)
 #[inline(always)]
 pub fn sub_mod(x: GfElement, y: GfElement) -> GfElement {
-    let dif = u32::from(x).wrapping_sub(u32::from(y));
-    dif.wrapping_add(dif >> GF_BITS) as GfElement
+    let dif = x.wrapping_sub(y);
+
+    // If we wrapped, subtract one. Faster than:
+    // (dif, did_wrap) = x.overflowing_sub(y)
+    if y > x {
+        dif - 1
+    } else {
+        dif
+    }
+    // Alternative way to do the same with dif as u32 (slower in my testing):
+    // dif.wrapping_add(dif >> GF_BITS) as GfElement
 }
 
 // ======================================================================
