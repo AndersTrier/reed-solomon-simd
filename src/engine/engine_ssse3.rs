@@ -92,6 +92,10 @@ impl Engine for Ssse3 {
             *x64 ^= y64;
         }
     }
+
+    fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
+        unsafe { Self::eval_poly_ssse3(erasures, truncated_size) }
+    }
 }
 
 // ======================================================================
@@ -569,6 +573,16 @@ impl Ssse3 {
                 }
             }
         }
+    }
+}
+
+// ======================================================================
+// Ssse3 - PRIVATE - Evaluate polynomial
+
+impl Ssse3 {
+    #[target_feature(enable = "ssse3")]
+    unsafe fn eval_poly_ssse3(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
+        engine::eval_poly::<Self>(erasures, truncated_size)
     }
 }
 
