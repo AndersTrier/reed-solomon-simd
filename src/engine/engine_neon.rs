@@ -87,6 +87,10 @@ impl Engine for Neon {
             *x64 ^= y64;
         }
     }
+
+    fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
+        unsafe { Self::eval_poly_neon(erasures, truncated_size) }
+    }
 }
 
 // ======================================================================
@@ -570,6 +574,16 @@ impl Neon {
                 }
             }
         }
+    }
+}
+
+// ======================================================================
+// Neon - PRIVATE - Evaluate polynomial
+
+impl Neon {
+    #[target_feature(enable = "neon")]
+    unsafe fn eval_poly_neon(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
+        engine::eval_poly::<Self>(erasures, truncated_size)
     }
 }
 
