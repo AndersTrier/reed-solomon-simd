@@ -92,6 +92,10 @@ impl Engine for Avx2 {
             *x64 ^= y64;
         }
     }
+
+    fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
+        unsafe { Self::eval_poly_avx2(erasures, truncated_size) }
+    }
 }
 
 // ======================================================================
@@ -558,6 +562,16 @@ impl Avx2 {
                 }
             }
         }
+    }
+}
+
+// ======================================================================
+// Avx2 - PRIVATE - Evaluate polynomial
+
+impl Avx2 {
+    #[target_feature(enable = "avx2")]
+    unsafe fn eval_poly_avx2(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
+        engine::eval_poly::<Self>(erasures, truncated_size)
     }
 }
 
