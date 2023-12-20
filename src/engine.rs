@@ -105,6 +105,25 @@ pub fn sub_mod(x: GfElement, y: GfElement) -> GfElement {
 }
 
 // ======================================================================
+// FUNCTIONS - CRATE - Evaluate polynomial
+
+// We have this function here instead of inside 'trait Engine' to allow
+// it to be included and compiled with SIMD features enabled within the
+// SIMD engines.
+#[inline(always)]
+pub(crate) fn eval_poly<E: Engine>(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
+    let log_walsh = tables::initialize_log_walsh::<E>();
+
+    E::fwht(erasures, truncated_size);
+
+    for (e, factor) in std::iter::zip(erasures.iter_mut(), log_walsh.iter()) {
+        *e = ((u32::from(*e) * u32::from(*factor)) % u32::from(GF_MODULUS)) as GfElement;
+    }
+
+    E::fwht(erasures, GF_ORDER);
+}
+
+// ======================================================================
 // FUNCTIONS - PUBLIC - misc
 
 /// Returns smallest value that is greater than or equal to `a` and multiple of `b`,
@@ -214,15 +233,7 @@ pub trait Engine {
     where
         Self: Sized,
     {
-        let log_walsh = tables::initialize_log_walsh::<Self>();
-
-        Self::fwht(erasures, truncated_size);
-
-        for (e, factor) in std::iter::zip(erasures.iter_mut(), log_walsh.iter()) {
-            *e = ((u32::from(*e) * u32::from(*factor)) % u32::from(GF_MODULUS)) as GfElement;
-        }
-
-        Self::fwht(erasures, GF_ORDER);
+        eval_poly::<Self>(erasures, truncated_size)
     }
 
     /// FFT with `skew_delta = pos + size`.
