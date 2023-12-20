@@ -1,7 +1,6 @@
 use crate::engine::{
-    self,
     tables::{self, Mul16, Skew},
-    Engine, GfElement, ShardsRefMut, GF_MODULUS, GF_ORDER,
+    Engine, GfElement, ShardsRefMut, GF_MODULUS,
 };
 
 // ======================================================================
@@ -45,10 +44,6 @@ impl Engine for NoSimd {
         skew_delta: usize,
     ) {
         self.fft_private(data, pos, size, truncated_size, skew_delta);
-    }
-
-    fn fwht(data: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        Self::fwht_private(data, truncated_size);
     }
 
     fn ifft(
@@ -115,70 +110,6 @@ impl NoSimd {
                 x[pos + i + 32] ^= (prod >> 8) as u8;
             }
             pos += 64;
-        }
-    }
-}
-
-// ======================================================================
-// NoSimd - PRIVATE - FWHT (fast Walsh-Hadamard transform)
-
-impl NoSimd {
-    #[inline(always)]
-    fn fwht_2(a: &mut GfElement, b: &mut GfElement) {
-        let sum = engine::add_mod(*a, *b);
-        let dif = engine::sub_mod(*a, *b);
-        *a = sum;
-        *b = dif;
-    }
-
-    #[inline(always)]
-    fn fwht_4(data: &mut [GfElement], dist: usize) {
-        let mut t0 = data[0];
-        let mut t1 = data[dist];
-        let mut t2 = data[dist * 2];
-        let mut t3 = data[dist * 3];
-
-        Self::fwht_2(&mut t0, &mut t1);
-        Self::fwht_2(&mut t2, &mut t3);
-        Self::fwht_2(&mut t0, &mut t2);
-        Self::fwht_2(&mut t1, &mut t3);
-
-        data[0] = t0;
-        data[dist] = t1;
-        data[dist * 2] = t2;
-        data[dist * 3] = t3;
-    }
-
-    #[inline(always)]
-    fn fwht_private(data: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        // TWO LAYERS AT TIME
-
-        let mut dist = 1;
-        let mut dist4 = 4;
-        while dist4 <= GF_ORDER {
-            let mut r = 0;
-            while r < truncated_size {
-                for i in r..r + dist {
-                    Self::fwht_4(&mut data[i..], dist)
-                }
-                r += dist4;
-            }
-
-            dist = dist4;
-            dist4 <<= 2;
-        }
-
-        // FINAL ODD LAYER
-
-        if dist < GF_ORDER {
-            for i in 0..dist {
-                // inlined manually as Rust doesn't like
-                // `fwht_2(&mut data[i], &mut data[i + dist])`
-                let sum = engine::add_mod(data[i], data[i + dist]);
-                let dif = engine::sub_mod(data[i], data[i + dist]);
-                data[i] = sum;
-                data[i + dist] = dif;
-            }
         }
     }
 }
