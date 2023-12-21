@@ -16,12 +16,13 @@
 //! [`NoSimd`]: crate::engine::NoSimd
 //! [`Avx2`]: crate::engine::Avx2
 //! [`Ssse3`]: crate::engine::Ssse3
+//! [`Engine`]: crate::engine
 //!
 
 use once_cell::sync::OnceCell;
 
 use crate::engine::{
-    self, Engine, GfElement, CANTOR_BASIS, GF_BITS, GF_MODULUS, GF_ORDER, GF_POLYNOMIAL,
+    self, fwht, GfElement, CANTOR_BASIS, GF_BITS, GF_MODULUS, GF_ORDER, GF_POLYNOMIAL,
 };
 
 // ======================================================================
@@ -31,12 +32,14 @@ use crate::engine::{
 /// and by all [`Engine`]:s to initialize other tables.
 ///
 /// [`Naive`]: crate::engine::Naive
+/// [`Engine`]: crate::engine
 pub type Exp = [GfElement; GF_ORDER];
 
 /// Used by [`Naive`] engine for multiplications
 /// and by all [`Engine`]:s to initialize other tables.
 ///
 /// [`Naive`]: crate::engine::Naive
+/// [`Engine`]: crate::engine
 pub type Log = [GfElement; GF_ORDER];
 
 /// Used by [`Avx2`] and [`Ssse3`] engines for multiplications.
@@ -55,6 +58,9 @@ pub struct Multiply128lutT {
 }
 
 /// Used by all [`Engine`]:s in [`Engine::eval_poly`].
+///
+/// [`Engine`]: crate::engine
+/// [`Engine::eval_poly`]: crate::engine::Engine::eval_poly
 pub type LogWalsh = [GfElement; GF_ORDER];
 
 /// Used by [`NoSimd`] engine for multiplications.
@@ -63,6 +69,8 @@ pub type LogWalsh = [GfElement; GF_ORDER];
 pub type Mul16 = [[[GfElement; 16]; 4]; GF_ORDER];
 
 /// Used by all [`Engine`]:s for FFT and IFFT.
+///
+/// [`Engine`]: crate::engine
 pub type Skew = [GfElement; GF_MODULUS as usize];
 
 // ======================================================================
@@ -144,7 +152,7 @@ pub fn initialize_exp_log() -> (&'static Exp, &'static Log) {
 }
 
 /// Initializes and returns [`LogWalsh`] table.
-pub fn initialize_log_walsh<E: Engine>() -> &'static LogWalsh {
+pub fn initialize_log_walsh() -> &'static LogWalsh {
     LOG_WALSH.get_or_init(|| {
         let (_, log) = initialize_exp_log();
 
@@ -152,7 +160,7 @@ pub fn initialize_log_walsh<E: Engine>() -> &'static LogWalsh {
 
         log_walsh.copy_from_slice(log.as_ref());
         log_walsh[0] = 0;
-        E::fwht(log_walsh.as_mut(), GF_ORDER);
+        fwht::fwht(log_walsh.as_mut(), GF_ORDER);
 
         log_walsh
     })

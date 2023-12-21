@@ -520,7 +520,7 @@ impl Ssse3 {
 impl Ssse3 {
     #[target_feature(enable = "ssse3")]
     unsafe fn eval_poly_ssse3(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        engine::eval_poly::<Self>(erasures, truncated_size)
+        engine::eval_poly(erasures, truncated_size)
     }
 }
 

@@ -509,7 +509,7 @@ impl Avx2 {
 impl Avx2 {
     #[target_feature(enable = "avx2")]
     unsafe fn eval_poly_avx2(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        engine::eval_poly::<Self>(erasures, truncated_size)
+        engine::eval_poly(erasures, truncated_size)
     }
 }
 

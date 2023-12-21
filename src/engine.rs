@@ -112,8 +112,8 @@ pub fn sub_mod(x: GfElement, y: GfElement) -> GfElement {
 // it to be included and compiled with SIMD features enabled within the
 // SIMD engines.
 #[inline(always)]
-pub(crate) fn eval_poly<E: Engine>(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-    let log_walsh = tables::initialize_log_walsh::<E>();
+pub(crate) fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
+    let log_walsh = tables::initialize_log_walsh();
 
     fwht::fwht(erasures, truncated_size);
 
@@ -237,7 +237,7 @@ pub trait Engine {
     where
         Self: Sized,
     {
-        eval_poly::<Self>(erasures, truncated_size)
+        eval_poly(erasures, truncated_size)
     }
 
     /// FFT with `skew_delta = pos + size`.
