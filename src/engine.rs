@@ -115,13 +115,13 @@ pub fn sub_mod(x: GfElement, y: GfElement) -> GfElement {
 pub(crate) fn eval_poly<E: Engine>(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
     let log_walsh = tables::initialize_log_walsh::<E>();
 
-    E::fwht(erasures, truncated_size);
+    fwht::fwht(erasures, truncated_size);
 
     for (e, factor) in std::iter::zip(erasures.iter_mut(), log_walsh.iter()) {
         *e = ((u32::from(*e) * u32::from(*factor)) % u32::from(GF_MODULUS)) as GfElement;
     }
 
-    E::fwht(erasures, GF_ORDER);
+    fwht::fwht(erasures, GF_ORDER);
 }
 
 // ======================================================================
