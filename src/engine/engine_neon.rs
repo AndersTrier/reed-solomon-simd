@@ -1,5 +1,5 @@
 use crate::engine::{
-    self, fwht,
+    self,
     tables::{self, Mul128, Multiply128lutT, Skew},
     Engine, GfElement, ShardsRefMut, GF_MODULUS, GF_ORDER,
 };
@@ -48,12 +48,6 @@ impl Engine for Neon {
     ) {
         unsafe {
             self.fft_private_neon(data, pos, size, truncated_size, skew_delta);
-        }
-    }
-
-    fn fwht(data: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        unsafe {
-            Self::fwht_private_neon(data, truncated_size);
         }
     }
 
@@ -187,16 +181,6 @@ impl Neon {
             x_hi = veorq_u8(x_hi, prod_hi);
         }
         (x_lo, x_hi)
-    }
-}
-
-// ======================================================================
-// Neon - PRIVATE - FWHT (fast Walsh-Hadamard transform)
-
-impl Neon {
-    #[target_feature(enable = "neon")]
-    unsafe fn fwht_private_neon(data: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        fwht::fwht(data, truncated_size)
     }
 }
 

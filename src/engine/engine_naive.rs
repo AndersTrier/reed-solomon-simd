@@ -1,7 +1,6 @@
 use crate::engine::{
-    self,
     tables::{self, Exp, Log, Skew},
-    Engine, GfElement, ShardsRefMut, GF_MODULUS, GF_ORDER,
+    Engine, GfElement, ShardsRefMut, GF_MODULUS,
 };
 
 // ======================================================================
@@ -66,25 +65,6 @@ impl Engine for Naive {
                 r += dist * 2;
             }
             dist /= 2;
-        }
-    }
-
-    fn fwht(data: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        debug_assert!(truncated_size <= GF_ORDER);
-
-        let mut dist = 1;
-        while dist < GF_ORDER {
-            let mut r = 0;
-            while r < truncated_size {
-                for i in r..r + dist {
-                    let sum = engine::add_mod(data[i], data[i + dist]);
-                    let dif = engine::sub_mod(data[i], data[i + dist]);
-                    data[i] = sum;
-                    data[i + dist] = dif;
-                }
-                r += dist * 2;
-            }
-            dist *= 2;
         }
     }
 

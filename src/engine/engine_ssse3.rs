@@ -6,7 +6,7 @@ use std::arch::x86::*;
 use std::arch::x86_64::*;
 
 use crate::engine::{
-    self, fwht,
+    self,
     tables::{self, Mul128, Multiply128lutT, Skew},
     Engine, GfElement, ShardsRefMut, GF_MODULUS, GF_ORDER,
 };
@@ -53,12 +53,6 @@ impl Engine for Ssse3 {
     ) {
         unsafe {
             self.fft_private_ssse3(data, pos, size, truncated_size, skew_delta);
-        }
-    }
-
-    fn fwht(data: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        unsafe {
-            Self::fwht_private_ssse3(data, truncated_size);
         }
     }
 
@@ -186,16 +180,6 @@ impl Ssse3 {
             x_hi = _mm_xor_si128(x_hi, prod_hi);
         }
         (x_lo, x_hi)
-    }
-}
-
-// ======================================================================
-// Ssse3 - PRIVATE - FWHT (fast Walsh-Hadamard transform)
-
-impl Ssse3 {
-    #[target_feature(enable = "ssse3")]
-    unsafe fn fwht_private_ssse3(data: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        fwht::fwht(data, truncated_size)
     }
 }
 

@@ -6,7 +6,7 @@ use std::arch::x86::*;
 use std::arch::x86_64::*;
 
 use crate::engine::{
-    self, fwht,
+    self,
     tables::{self, Mul128, Multiply128lutT, Skew},
     Engine, GfElement, ShardsRefMut, GF_MODULUS, GF_ORDER,
 };
@@ -53,12 +53,6 @@ impl Engine for Avx2 {
     ) {
         unsafe {
             self.fft_private_avx2(data, pos, size, truncated_size, skew_delta);
-        }
-    }
-
-    fn fwht(data: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        unsafe {
-            Self::fwht_private_avx2(data, truncated_size);
         }
     }
 
@@ -197,16 +191,6 @@ impl Avx2 {
             x_hi = _mm256_xor_si256(x_hi, prod_hi);
         }
         (x_lo, x_hi)
-    }
-}
-
-// ======================================================================
-// Avx2 - PRIVATE - FWHT (fast Walsh-Hadamard transform)
-
-impl Avx2 {
-    #[target_feature(enable = "avx2")]
-    unsafe fn fwht_private_avx2(data: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        fwht::fwht(data, truncated_size)
     }
 }
 

@@ -3,7 +3,7 @@ use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 
 use reed_solomon_simd::{
-    engine::{DefaultEngine, Engine, GfElement, Naive, NoSimd, ShardsRefMut, GF_ORDER},
+    engine::{DefaultEngine, Engine, Naive, NoSimd, ShardsRefMut},
     rate::{
         HighRateDecoder, HighRateEncoder, LowRateDecoder, LowRateEncoder, RateDecoder, RateEncoder,
     },
@@ -378,16 +378,6 @@ fn benchmarks_engine_one<E: Engine>(c: &mut Criterion, name: &str, engine: E) {
                 black_box(128),
             )
         })
-    });
-
-    // FWHT
-
-    let mut fwht_data = [0 as GfElement; GF_ORDER];
-    let mut rng = ChaCha8Rng::from_seed([0; 32]);
-    rng.fill::<[u16]>(&mut fwht_data);
-
-    group.bench_function("FWHT", |b| {
-        b.iter(|| E::fwht(black_box(&mut fwht_data), black_box(GF_ORDER)))
     });
 
     group.finish();

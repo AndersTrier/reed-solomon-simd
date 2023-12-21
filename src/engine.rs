@@ -217,21 +217,6 @@ pub trait Engine {
     // ============================================================
     // PROVIDED
 
-    /// In-place FWHT (fast Walsh-Hadamard transform).
-    ///
-    /// - This is used only in [`Engine::eval_poly`],
-    ///   both directly and indirectly via [`initialize_log_walsh`].
-    /// - `truncated_size` must be handled so that
-    ///   [`Engine::eval_poly`] returns correct result.
-    ///
-    /// [`initialize_log_walsh`]: self::tables::initialize_log_walsh
-    fn fwht(data: &mut [GfElement; GF_ORDER], truncated_size: usize)
-    where
-        Self: Sized,
-    {
-        fwht::fwht(data, truncated_size)
-    }
-
     /// Evaluate polynomial.
     fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize)
     where

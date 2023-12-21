@@ -70,28 +70,6 @@ impl Engine for DefaultEngine {
         self.0.fft(data, pos, size, truncated_size, skew_delta)
     }
 
-    fn fwht(data: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-        {
-            if is_x86_feature_detected!("avx2") {
-                return Avx2::fwht(data, truncated_size);
-            }
-
-            if is_x86_feature_detected!("ssse3") {
-                return Ssse3::fwht(data, truncated_size);
-            }
-        }
-
-        #[cfg(target_arch = "aarch64")]
-        {
-            if std::arch::is_aarch64_feature_detected!("neon") {
-                return Neon::fwht(data, truncated_size);
-            }
-        }
-
-        NoSimd::fwht(data, truncated_size)
-    }
-
     fn ifft(
         &self,
         data: &mut ShardsRefMut,
