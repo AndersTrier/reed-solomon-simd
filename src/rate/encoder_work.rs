@@ -12,7 +12,8 @@ use crate::{
 pub struct EncoderWork {
     original_count: usize,
     recovery_count: usize,
-    shard_bytes: usize,
+
+    pub(crate) shard_bytes: usize,
 
     original_received_count: usize,
     shards: Shards,
@@ -62,8 +63,7 @@ impl EncoderWork {
                 got: original_shard.len(),
             })
         } else {
-            self.shards[self.original_received_count]
-                .as_flattened_mut()
+            self.shards[self.original_received_count].as_flattened_mut()[..self.shard_bytes]
                 .copy_from_slice(original_shard);
             self.original_received_count += 1;
             Ok(())
@@ -88,7 +88,7 @@ impl EncoderWork {
     // This must only be called by `EncoderResult`.
     pub(crate) fn recovery(&self, index: usize) -> Option<&[u8]> {
         if index < self.recovery_count {
-            Some(self.shards[index].as_flattened())
+            Some(&self.shards[index].as_flattened()[..self.shard_bytes])
         } else {
             None
         }
@@ -101,14 +101,14 @@ impl EncoderWork {
         shard_bytes: usize,
         work_count: usize,
     ) {
-        assert!(shard_bytes % 64 == 0);
+        assert!(shard_bytes % 2 == 0);
 
         self.original_count = original_count;
         self.recovery_count = recovery_count;
         self.shard_bytes = shard_bytes;
 
         self.original_received_count = 0;
-        self.shards.resize(work_count, shard_bytes / 64);
+        self.shards.resize(work_count, shard_bytes.div_ceil(64));
     }
 
     pub(crate) fn reset_received(&mut self) {

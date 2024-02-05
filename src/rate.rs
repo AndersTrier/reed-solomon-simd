@@ -98,7 +98,7 @@ pub trait Rate<E: Engine> {
                 original_count,
                 recovery_count,
             })
-        } else if shard_bytes == 0 || shard_bytes & 63 != 0 {
+        } else if shard_bytes == 0 || shard_bytes & 1 != 0 {
             Err(Error::InvalidShardSize { shard_bytes })
         } else {
             Ok(())
