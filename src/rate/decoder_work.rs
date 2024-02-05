@@ -80,9 +80,7 @@ impl DecoderWork {
                 got: original_shard.len(),
             })
         } else {
-            self.shards[pos]
-                .as_flattened_mut()
-                .copy_from_slice(original_shard);
+            self.shards[pos].as_flattened_mut()[..self.shard_bytes].copy_from_slice(original_shard);
             self.original_received_count += 1;
             self.received.set(pos, true);
             Ok(())
@@ -110,9 +108,7 @@ impl DecoderWork {
                 got: recovery_shard.len(),
             })
         } else {
-            self.shards[pos]
-                .as_flattened_mut()
-                .copy_from_slice(recovery_shard);
+            self.shards[pos].as_flattened_mut()[..self.shard_bytes].copy_from_slice(recovery_shard);
             self.recovery_received_count += 1;
             self.received.set(pos, true);
             Ok(())
@@ -156,7 +152,7 @@ impl DecoderWork {
         recovery_base_pos: usize,
         work_count: usize,
     ) {
-        assert!(shard_bytes % 64 == 0);
+        assert!(shard_bytes % 2 == 0);
 
         self.original_count = original_count;
         self.recovery_count = recovery_count;
@@ -178,7 +174,7 @@ impl DecoderWork {
             self.received.grow(max_received_pos);
         }
 
-        self.shards.resize(work_count, shard_bytes / 64);
+        self.shards.resize(work_count, shard_bytes.div_ceil(64));
     }
 
     pub(crate) fn reset_received(&mut self) {
@@ -192,7 +188,7 @@ impl DecoderWork {
         let pos = self.original_base_pos + index;
 
         if index < self.original_count && !self.received[pos] {
-            Some(self.shards[pos].as_flattened())
+            Some(&self.shards[pos].as_flattened()[..self.shard_bytes])
         } else {
             None
         }
