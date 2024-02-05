@@ -8,7 +8,7 @@ pub(crate) struct Shards {
     // Number of 64 byte chunks in a shard
     shard_len_64: usize,
 
-    // Flat array of `shard_count * shard_bytes` bytes.
+    // `shard_count * shard_len_64 * 64` bytes.
     data: Vec<[u8; 64]>,
 }
 
