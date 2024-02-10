@@ -2,24 +2,12 @@
 
 Reed-Solomon erasure coding, featuring:
 
-- Up to 65535 original shards or 65535 recovery shards.
 - `O(n log n)` complexity.
+- Entirely written in Rust.
 - Runtime selection of best SIMD implementation on both AArch64 (Neon) and x86(-64) (SSSE3 and AVX2) with
 fallback to plain Rust.
-- Entirely written in Rust.
-
-## Quick introduction to **original shards** and **recovery shards**
-
-- The data which is going to be protected by Reed-Solomon erasure coding
-  is split into equal-sized **original shards**.
-    - **`original_count`** is the number of original shards.
-- Additional **recovery shards** of same size are then created
-  which contain recovery data so that original data can be fully restored
-  from any set of **`original_count`** shards, original or recovery.
-    - **`recovery_count`** is the number of recovery shards.
-
-Algorithm supports **any combination of 1 - 32768 original shards with 1 - 32768 recovery shards**.
-Up to 65535 original or recovery shards is also possible with following limitations:
+- Any combination of 1 - 32768 original shards with 1 - 32768 recovery shards.
+- Up to 65535 original or recovery shards is also possible with following limitations:
 
 | `original_count` | `recovery_count` |
 | ---------------- | ---------------- |
@@ -86,6 +74,8 @@ $ cargo bench main
 4. When some original shards get lost, restore them with [`reed_solomon_simd::decode`].
     - You must provide at least as many shards as there were original shards in total,
       in any combination of original shards and recovery shards.
+
+Note: This crate does not detect or correct errors within a shard. So if data corruption is a likely scenario, you should include an error detection hash with each shard, and skip feeding the corrupted shards to the decoder. Here are a few suggestions for very fast error detection hashes: CRC32c (4 bytes), HighwayHash (8, 16 or 32 bytes) or xxHash (4, 8 or 16 bytes).
 
 ### Example
 
