@@ -13,7 +13,7 @@ pub(crate) fn fwht(data: &mut [GfElement; GF_ORDER], truncated_size: usize) {
         let mut r = 0;
         while r < truncated_size {
             for i in r..r + dist {
-                fwht_4(&mut data[i..], dist)
+                fwht_4(data, i as u16, dist as u16);
             }
             r += dist4;
         }
@@ -40,27 +40,28 @@ pub(crate) fn fwht(data: &mut [GfElement; GF_ORDER], truncated_size: usize) {
 // FWHT - PRIVATE
 
 #[inline(always)]
-fn fwht_2(a: &mut GfElement, b: &mut GfElement) {
-    let sum = engine::add_mod(*a, *b);
-    let dif = engine::sub_mod(*a, *b);
-    *a = sum;
-    *b = dif;
+fn fwht_2(a: GfElement, b: GfElement) -> (GfElement, GfElement) {
+    let sum = engine::add_mod(a, b);
+    let dif = engine::sub_mod(a, b);
+    (sum, dif)
 }
 
 #[inline(always)]
-fn fwht_4(data: &mut [GfElement], dist: usize) {
-    let mut t0 = data[0];
-    let mut t1 = data[dist];
-    let mut t2 = data[dist * 2];
-    let mut t3 = data[dist * 3];
+fn fwht_4(data: &mut [GfElement; GF_ORDER], offset: u16, dist: u16) {
+    // Indices. u16 additions and multiplication to avoid bounds checks
+    // on array access. (GF_ORDER == (u16::MAX+1))
+    let i0 = usize::from(offset);
+    let i1 = usize::from(offset + dist);
+    let i2 = usize::from(offset + dist * 2);
+    let i3 = usize::from(offset + dist * 3);
 
-    fwht_2(&mut t0, &mut t1);
-    fwht_2(&mut t2, &mut t3);
-    fwht_2(&mut t0, &mut t2);
-    fwht_2(&mut t1, &mut t3);
+    let (s0, d0) = fwht_2(data[i0], data[i1]);
+    let (s1, d1) = fwht_2(data[i2], data[i3]);
+    let (s2, d2) = fwht_2(s0, s1);
+    let (s3, d3) = fwht_2(d0, d1);
 
-    data[0] = t0;
-    data[dist] = t1;
-    data[dist * 2] = t2;
-    data[dist * 3] = t3;
+    data[i0] = s2;
+    data[i1] = s3;
+    data[i2] = d2;
+    data[i3] = d3;
 }
