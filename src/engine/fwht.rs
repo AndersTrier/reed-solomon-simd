@@ -21,19 +21,6 @@ pub(crate) fn fwht(data: &mut [GfElement; GF_ORDER], truncated_size: usize) {
         dist = dist4;
         dist4 <<= 2;
     }
-
-    // FINAL ODD LAYER
-
-    if dist < GF_ORDER {
-        for i in 0..dist {
-            // inlined manually as Rust doesn't like
-            // `fwht_2(&mut data[i], &mut data[i + dist])`
-            let sum = engine::add_mod(data[i], data[i + dist]);
-            let dif = engine::sub_mod(data[i], data[i + dist]);
-            data[i] = sum;
-            data[i + dist] = dif;
-        }
-    }
 }
 
 // ======================================================================
