@@ -3,19 +3,19 @@ use crate::engine::{self, GfElement, GF_ORDER};
 // ======================================================================
 // FWHT (fast Walsh-Hadamard transform) - CRATE
 
+/// Decimation in time (DIT) Fast Walsh-Hadamard Transform.
+/// `m_truncated`: Number of non-zero elements in `data` (at the front).
 #[inline(always)]
-pub(crate) fn fwht(data: &mut [GfElement; GF_ORDER], truncated_size: usize) {
+pub(crate) fn fwht(data: &mut [GfElement; GF_ORDER], m_truncated: usize) {
     // TWO LAYERS AT TIME
 
     let mut dist = 1;
     let mut dist4 = 4;
     while dist4 <= GF_ORDER {
-        let mut r = 0;
-        while r < truncated_size {
-            for i in r..r + dist {
-                fwht_4(data, i as u16, dist as u16);
+        for r in (0..m_truncated).step_by(dist4) {
+            for offset in r..r + dist {
+                fwht_4(data, offset as u16, dist as u16);
             }
-            r += dist4;
         }
 
         dist = dist4;
