@@ -14,7 +14,6 @@ use crate::{
 // IntOrRange - CRATE
 
 pub(crate) trait IntOrRange {
-    fn contains(&self, item: usize) -> bool;
     // incluside
     fn min(&self) -> usize;
     // exclusive
@@ -22,10 +21,6 @@ pub(crate) trait IntOrRange {
 }
 
 impl IntOrRange for usize {
-    fn contains(&self, item: usize) -> bool {
-        *self == item
-    }
-
     fn min(&self) -> usize {
         *self
     }
@@ -36,10 +31,6 @@ impl IntOrRange for usize {
 }
 
 impl IntOrRange for Range<usize> {
-    fn contains(&self, item: usize) -> bool {
-        self.contains(&item)
-    }
-
     fn min(&self) -> usize {
         self.start
     }
