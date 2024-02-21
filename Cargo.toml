@@ -34,7 +34,7 @@ sha2 = "0.10.0"
 # These are only for `examples/quick-comparison.rs`.
 reed-solomon-16 = "0.1.0"
 reed-solomon-erasure = { version = "6.0.0", features = [ "simd-accel" ] }
-reed-solomon-novelpoly = "1.0.0"
+reed-solomon-novelpoly = "2.0.0"
 
 [lib]
 bench = false
