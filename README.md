@@ -1,6 +1,6 @@
 # reed-solomon-simd
 
-Reed-Solomon erasure coding, featuring:
+Reed-Solomon erasure coding based on [Leopard-RS], featuring:
 
 - `O(n log n)` complexity.
 - Entirely written in Rust.
@@ -20,6 +20,7 @@ fallback to plain Rust.
 | `<= 8192`        | `<= 57344`       |
 | `<= 4096`        | `<= 61440`       |
 | `<= 2^n`         | `<= 2^16 - 2^n`  |
+
 
 ## Benchmarks
 
