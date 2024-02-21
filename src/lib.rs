@@ -349,7 +349,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_util;
 
     // ============================================================
     // ROUNDTRIP
@@ -374,7 +373,6 @@ mod tests {
 
     mod encode {
         use super::super::*;
-        use crate::Error;
 
         // ==================================================
         // ERRORS
@@ -445,7 +443,6 @@ mod tests {
 
     mod decode {
         use super::super::*;
-        use crate::Error;
 
         #[test]
         fn no_original_missing_with_no_recovery_given() {
