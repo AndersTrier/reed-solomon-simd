@@ -7,8 +7,9 @@ use crate::engine::{self, GfElement, GF_ORDER};
 /// `m_truncated`: Number of non-zero elements in `data` (at the front).
 #[inline(always)]
 pub(crate) fn fwht(data: &mut [GfElement; GF_ORDER], m_truncated: usize) {
-    // TWO LAYERS AT TIME
-
+    // Note to self: fwht_8 is slightly faster on x86 (AMD Ryzen 5 3600),
+    // but slower on ARM (Apple silicon M1).
+    // fwht_16 is always slower. See branch: AndersTrier/FWHT_8_and_16
     let mut dist = 1;
     let mut dist4 = 4;
     while dist4 <= GF_ORDER {
@@ -51,4 +52,82 @@ fn fwht_4(data: &mut [GfElement; GF_ORDER], offset: u16, dist: u16) {
     data[i1] = s3;
     data[i2] = d2;
     data[i3] = d3;
+}
+
+// ======================================================================
+// FWHT - TESTS
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::{Rng, SeedableRng};
+    use rand_chacha::ChaCha8Rng;
+
+    // Reference implementation
+    fn fwht_naive(data: &mut [GfElement; GF_ORDER]) {
+        let mut dist = 1;
+        let mut dist2 = 2;
+        while dist2 <= data.len() {
+            for r in (0..data.len()).step_by(dist2) {
+                for offset in r..r + dist {
+                    let sum = engine::add_mod(data[offset], data[offset + dist]);
+                    let dif = engine::sub_mod(data[offset], data[offset + dist]);
+                    data[offset] = sum;
+                    data[offset + dist] = dif;
+                }
+            }
+
+            dist = dist2;
+            dist2 *= 2;
+        }
+    }
+
+    #[test]
+    fn test_full() {
+        let mut rng = ChaCha8Rng::from_seed([0; 32]);
+
+        let mut data1 = [(); GF_ORDER].map(|_| rng.gen());
+        let mut data2 = data1;
+
+        fwht(&mut data1, GF_ORDER);
+        fwht_naive(&mut data2);
+
+        assert_eq!(data1, data2);
+    }
+
+    #[test]
+    fn test_truncated() {
+        let mut rng = ChaCha8Rng::from_seed([0; 32]);
+        let random: Vec<GfElement> = (0..GF_ORDER).map(|_| rng.gen()).collect();
+
+        for nonzero_count in [
+            0,
+            1,
+            2,
+            3,
+            4,
+            64,
+            127,
+            16384 - 1,
+            16384 + 1,
+            GF_ORDER / 2 - 1,
+            GF_ORDER / 2,
+            GF_ORDER / 2 + 1,
+            GF_ORDER - 4,
+            GF_ORDER - 3,
+            GF_ORDER - 2,
+            GF_ORDER - 1,
+            GF_ORDER,
+        ] {
+            let mut data1 = [0; GF_ORDER];
+
+            data1[..nonzero_count].copy_from_slice(&random[..nonzero_count]);
+            let mut data2 = data1;
+
+            fwht(&mut data1, nonzero_count);
+            fwht_naive(&mut data2);
+
+            assert_eq!(data1, data2);
+        }
+    }
 }
