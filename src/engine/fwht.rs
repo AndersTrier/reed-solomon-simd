@@ -12,7 +12,7 @@ pub(crate) fn fwht(data: &mut [GfElement; GF_ORDER], m_truncated: usize) {
     // fwht_16 is always slower. See branch: AndersTrier/FWHT_8_and_16
 
     if m_truncated >= GF_ORDER {
-        return fwht_8_full(data);
+        return fwht_16_full(data);
     }
 
     let mut dist = 1;
@@ -121,6 +121,95 @@ fn fwht_8(data: &mut [GfElement; GF_ORDER], offset: u16, dist: u16) {
     data[t5] = d9;
     data[t6] = d10;
     data[t7] = d11;
+}
+
+#[inline(always)]
+fn fwht_16_full(data: &mut [GfElement; GF_ORDER]) {
+    let mut dist = 1;
+    let mut dist16 = 16;
+    while dist16 <= GF_ORDER {
+        for r in (0..GF_ORDER).step_by(dist16) {
+            for offset in r..r + dist {
+                fwht_16(data, offset as u16, dist as u16);
+            }
+        }
+
+        dist = dist16;
+        dist16 <<= 4;
+    }
+}
+
+#[inline(always)]
+fn fwht_16(data: &mut [GfElement; GF_ORDER], offset: u16, dist: u16) {
+    let t0 = usize::from(offset);
+    let t1 = usize::from(offset + dist);
+    let t2 = usize::from(offset + dist * 2);
+    let t3 = usize::from(offset + dist * 3);
+    let t4 = usize::from(offset + dist * 4);
+    let t5 = usize::from(offset + dist * 5);
+    let t6 = usize::from(offset + dist * 6);
+    let t7 = usize::from(offset + dist * 7);
+    let t8 = usize::from(offset + dist * 8);
+    let t9 = usize::from(offset + dist * 9);
+    let t10 = usize::from(offset + dist * 10);
+    let t11 = usize::from(offset + dist * 11);
+    let t12 = usize::from(offset + dist * 12);
+    let t13 = usize::from(offset + dist * 13);
+    let t14 = usize::from(offset + dist * 14);
+    let t15 = usize::from(offset + dist * 15);
+
+    let (s0, d0) = fwht_2(data[t0], data[t1]);
+    let (s1, d1) = fwht_2(data[t2], data[t3]);
+    let (s2, d2) = fwht_2(data[t4], data[t5]);
+    let (s3, d3) = fwht_2(data[t6], data[t7]);
+    let (s4, d4) = fwht_2(data[t8], data[t9]);
+    let (s5, d5) = fwht_2(data[t10], data[t11]);
+    let (s6, d6) = fwht_2(data[t12], data[t13]);
+    let (s7, d7) = fwht_2(data[t14], data[t15]);
+
+    let (s8, d8) = fwht_2(s0, s1);
+    let (s9, d9) = fwht_2(s2, s3);
+    let (s10, d10) = fwht_2(s4, s5);
+    let (s11, d11) = fwht_2(s6, s7);
+    let (s12, d12) = fwht_2(d0, d1);
+    let (s13, d13) = fwht_2(d2, d3);
+    let (s14, d14) = fwht_2(d4, d5);
+    let (s15, d15) = fwht_2(d6, d7);
+
+    let (s16, d16) = fwht_2(s8, s9);
+    let (s17, d17) = fwht_2(s10, s11);
+    let (s18, d18) = fwht_2(s12, s13);
+    let (s19, d19) = fwht_2(s14, s15);
+    let (s20, d20) = fwht_2(d8, d9);
+    let (s21, d21) = fwht_2(d10, d11);
+    let (s22, d22) = fwht_2(d12, d13);
+    let (s23, d23) = fwht_2(d14, d15);
+
+    let (s24, d24) = fwht_2(s16, s17);
+    let (s25, d25) = fwht_2(s18, s19);
+    let (s26, d26) = fwht_2(s20, s21);
+    let (s27, d27) = fwht_2(s22, s23);
+    let (s28, d28) = fwht_2(d16, d17);
+    let (s29, d29) = fwht_2(d18, d19);
+    let (s30, d30) = fwht_2(d20, d21);
+    let (s31, d31) = fwht_2(d22, d23);
+
+    data[t0] = s24;
+    data[t1] = s25;
+    data[t2] = s26;
+    data[t3] = s27;
+    data[t4] = s28;
+    data[t5] = s29;
+    data[t6] = s30;
+    data[t7] = s31;
+    data[t8] = d24;
+    data[t9] = d25;
+    data[t10] = d26;
+    data[t11] = d27;
+    data[t12] = d28;
+    data[t13] = d29;
+    data[t14] = d30;
+    data[t15] = d31;
 }
 
 // ======================================================================
@@ -247,5 +336,18 @@ mod tests {
 
             assert_eq!(data1, data2);
         }
+    }
+
+    #[test]
+    fn test_16_full() {
+        let mut rng = ChaCha8Rng::from_seed([0; 32]);
+
+        let mut data1 = [(); GF_ORDER].map(|_| rng.gen());
+        let mut data2 = data1;
+
+        fwht_16_full(&mut data1);
+        fwht_naive(&mut data2);
+
+        assert_eq!(data1, data2);
     }
 }
