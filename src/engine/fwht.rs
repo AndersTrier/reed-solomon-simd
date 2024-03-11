@@ -70,8 +70,7 @@ mod tests {
         while dist2 <= data.len() {
             for r in (0..data.len()).step_by(dist2) {
                 for offset in r..r + dist {
-                    let sum = engine::add_mod(data[offset], data[offset + dist]);
-                    let dif = engine::sub_mod(data[offset], data[offset + dist]);
+                    let (sum, dif) = fwht_2_naive(data[offset], data[offset + dist]);
                     data[offset] = sum;
                     data[offset + dist] = dif;
                 }
@@ -80,6 +79,22 @@ mod tests {
             dist = dist2;
             dist2 *= 2;
         }
+    }
+
+    fn fwht_2_naive(a: GfElement, b: GfElement) -> (GfElement, GfElement) {
+        let (mut sum, sum_overflow) = a.overflowing_add(b);
+        if sum_overflow {
+            // `sum` got reduced mod 65536, but we want to
+            // reduce it mod GF_MODULUS (65535) instead.
+            sum += 1;
+        }
+
+        let (mut dif, dif_overflow) = a.overflowing_sub(b);
+        if dif_overflow {
+            dif -= 1;
+        }
+
+        (sum, dif)
     }
 
     #[test]
