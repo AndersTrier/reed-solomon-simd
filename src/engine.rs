@@ -118,7 +118,8 @@ pub(crate) fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: us
     fwht::fwht(erasures, truncated_size);
 
     for (e, factor) in std::iter::zip(erasures.iter_mut(), log_walsh.iter()) {
-        *e = ((u32::from(*e) * u32::from(*factor)) % u32::from(GF_MODULUS)) as GfElement;
+        let product = u32::from(*e) * u32::from(*factor);
+        *e = add_mod(product as GfElement, (product >> GF_BITS) as GfElement);
     }
 
     fwht::fwht(erasures, GF_ORDER);
