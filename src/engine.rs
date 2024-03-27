@@ -41,6 +41,10 @@ pub use self::{
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub use self::{engine_avx2::Avx2, engine_ssse3::Ssse3};
 
+#[cfg(feature = "unstable-simd")]
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+pub use self::engine_avx512::Avx512;
+
 #[cfg(target_arch = "aarch64")]
 pub use self::engine_neon::Neon;
 
@@ -52,6 +56,10 @@ mod engine_nosimd;
 mod engine_avx2;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod engine_ssse3;
+
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(feature = "unstable-simd")]
+mod engine_avx512;
 
 #[cfg(target_arch = "aarch64")]
 mod engine_neon;

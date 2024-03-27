@@ -115,15 +115,17 @@ impl NoSimd {
 // NoSimd - PRIVATE - FFT (fast Fourier transform)
 
 impl NoSimd {
+    /// TODO
     // Partial butterfly, caller must do `GF_MODULUS` check with `xor`.
     #[inline(always)]
-    fn fft_butterfly_partial(&self, x: &mut [u8], y: &mut [u8], log_m: GfElement) {
+    pub fn fft_butterfly_partial(&self, x: &mut [u8], y: &mut [u8], log_m: GfElement) {
         self.mul_add(x, y, log_m);
         Self::xor(y, x);
     }
 
+    /// TODO
     #[inline(always)]
-    fn fft_butterfly_two_layers(
+    pub fn fft_butterfly_two_layers(
         &self,
         data: &mut ShardsRefMut,
         pos: usize,
@@ -216,15 +218,17 @@ impl NoSimd {
 // NoSimd - PRIVATE - IFFT (inverse fast Fourier transform)
 
 impl NoSimd {
+    /// TODO
     // Partial butterfly, caller must do `GF_MODULUS` check with `xor`.
     #[inline(always)]
-    fn ifft_butterfly_partial(&self, x: &mut [u8], y: &mut [u8], log_m: GfElement) {
+    pub fn ifft_butterfly_partial(&self, x: &mut [u8], y: &mut [u8], log_m: GfElement) {
         Self::xor(y, x);
         self.mul_add(x, y, log_m);
     }
 
+    /// TODO
     #[inline(always)]
-    fn ifft_butterfly_two_layers(
+    pub fn ifft_butterfly_two_layers(
         &self,
         data: &mut ShardsRefMut,
         pos: usize,
