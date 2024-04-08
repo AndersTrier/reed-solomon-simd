@@ -10,7 +10,7 @@ use crate::engine::Neon;
 // DefaultEngine - PUBLIC
 
 /// [`Engine`] that at runtime selects the best Engine.
-pub struct DefaultEngine(Box<dyn Engine>);
+pub struct DefaultEngine(Box<dyn Engine + Send + Sync>);
 
 impl DefaultEngine {
     /// Creates new [`DefaultEngine`] by chosing and initializing the underlying engine.
