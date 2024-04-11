@@ -8,7 +8,7 @@ pub(crate) struct Shards {
     shard_bytes: usize,
 
     // Flat array of `shard_count * shard_bytes` bytes.
-    data: Vec<u8>,
+    pub(crate) data: Vec<u8>,
 }
 
 impl Shards {

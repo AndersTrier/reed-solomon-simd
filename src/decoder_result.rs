@@ -1,4 +1,5 @@
 use crate::rate::DecoderWork;
+use std::mem::take;
 
 // ======================================================================
 // DecoderResult - PUBLIC
@@ -26,6 +27,15 @@ impl<'a> DecoderResult<'a> {
     /// and their indexes, ordered by indexes.
     pub fn restored_original_iter(&self) -> RestoredOriginal {
         RestoredOriginal::new(self.work)
+    }
+
+    /// Returns inner Vec
+    pub fn into_inner_vec(self) -> Vec<u8> {
+        let data = take(&mut self.work.shards.data);
+        //TODO: truncate
+        //data.truncate(self.
+        self.work.reset_received();
+        data
     }
 }
 
