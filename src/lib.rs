@@ -349,6 +349,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{engine::DefaultEngine, rate::DefaultRate};
 
     // ============================================================
     // ROUNDTRIP
@@ -366,6 +367,36 @@ mod tests {
         assert_eq!(restored.len(), 2);
         assert_eq!(restored[&0], original[0]);
         assert_eq!(restored[&1], original[1]);
+    }
+
+    // ==================================================
+    // trait Send
+
+    #[test]
+    fn test_send() {
+        fn assert_send<T: Send>() {}
+        assert_send::<ReedSolomonEncoder>();
+        assert_send::<ReedSolomonDecoder>();
+        assert_send::<DefaultEngine>();
+        assert_send::<DefaultRate<DefaultEngine>>();
+        assert_send::<DecoderResult>();
+        assert_send::<EncoderResult>();
+        assert_send::<Error>();
+    }
+
+    // ==================================================
+    // trait Sync
+
+    #[test]
+    fn test_sync() {
+        fn assert_sync<T: Sync>() {}
+        assert_sync::<ReedSolomonEncoder>();
+        assert_sync::<ReedSolomonDecoder>();
+        assert_sync::<DefaultEngine>();
+        assert_sync::<DefaultRate<DefaultEngine>>();
+        assert_sync::<DecoderResult>();
+        assert_sync::<EncoderResult>();
+        assert_sync::<Error>();
     }
 
     // ============================================================
