@@ -1,5 +1,7 @@
 #![doc = include_str!(concat!(env!("OUT_DIR"), "/README-rustdocified.md"))]
 #![deny(missing_docs)]
+#![cfg_attr(feature = "unstable-simd", feature(stdarch_x86_avx512))]
+#![cfg_attr(feature = "unstable-simd", feature(avx512_target_feature))]
 
 use std::{collections::HashMap, fmt};
 
