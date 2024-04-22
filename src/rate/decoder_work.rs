@@ -23,7 +23,7 @@ pub struct DecoderWork {
     recovery_received_count: usize,
     // May contain extra zero bits.
     received: FixedBitSet,
-    shards: Shards,
+    pub(crate) shards: Shards,
 }
 
 impl DecoderWork {
