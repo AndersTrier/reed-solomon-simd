@@ -20,3 +20,7 @@
 
 ## 2.2.1 - 2024-02-21
 - Faster Walsh-Hadamard transform (used in decoding).
+
+## 2.2.2 - 2024-04-22
+- Make DefaultEngine Send + Sync.
+- Slightly faster `eval_poly()` (used in decoding).
