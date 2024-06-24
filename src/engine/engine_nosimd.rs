@@ -59,16 +59,19 @@ impl Engine for NoSimd {
     fn mul(&self, x: &mut [u8], log_m: GfElement) {
         let lut = &self.mul16[log_m as usize];
 
-        let mut pos = 0;
-        while pos < x.len() {
+        for x_chunk in x.chunks_exact_mut(64) {
+            let (x_lo, x_hi) = x_chunk.split_at_mut(32);
+
             for i in 0..32 {
-                let lo = x[pos + i] as usize;
-                let hi = x[pos + i + 32] as usize;
-                let prod = lut[0][lo & 15] ^ lut[1][lo >> 4] ^ lut[2][hi & 15] ^ lut[3][hi >> 4];
-                x[pos + i] = prod as u8;
-                x[pos + i + 32] = (prod >> 8) as u8;
+                let lo = x_lo[i];
+                let hi = x_hi[i];
+                let prod = lut[0][usize::from(lo & 15)]
+                    ^ lut[1][usize::from(lo >> 4)]
+                    ^ lut[2][usize::from(hi & 15)]
+                    ^ lut[3][usize::from(hi >> 4)];
+                x_lo[i] = prod as u8;
+                x_hi[i] = (prod >> 8) as u8;
             }
-            pos += 64;
         }
     }
 
