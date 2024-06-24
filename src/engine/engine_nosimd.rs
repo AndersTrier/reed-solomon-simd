@@ -1,3 +1,5 @@
+use std::iter::zip;
+
 use crate::engine::{
     tables::{self, Mul16, Skew},
     Engine, GfElement, ShardsRefMut, GF_MODULUS,
@@ -97,16 +99,20 @@ impl NoSimd {
     fn mul_add(&self, x: &mut [u8], y: &[u8], log_m: GfElement) {
         let lut = &self.mul16[log_m as usize];
 
-        let mut pos = 0;
-        while pos < x.len() {
+        for (x_chunk, y_chunk) in zip(x.chunks_exact_mut(64), y.chunks_exact(64)) {
+            let (x_lo, x_hi) = x_chunk.split_at_mut(32);
+            let (y_lo, y_hi) = y_chunk.split_at(32);
+
             for i in 0..32 {
-                let lo = y[pos + i] as usize;
-                let hi = y[pos + i + 32] as usize;
-                let prod = lut[0][lo & 15] ^ lut[1][lo >> 4] ^ lut[2][hi & 15] ^ lut[3][hi >> 4];
-                x[pos + i] ^= prod as u8;
-                x[pos + i + 32] ^= (prod >> 8) as u8;
+                let lo = y_lo[i];
+                let hi = y_hi[i];
+                let prod = lut[0][usize::from(lo & 15)]
+                    ^ lut[1][usize::from(lo >> 4)]
+                    ^ lut[2][usize::from(hi & 15)]
+                    ^ lut[3][usize::from(hi >> 4)];
+                x_lo[i] ^= prod as u8;
+                x_hi[i] ^= (prod >> 8) as u8;
             }
-            pos += 64;
         }
     }
 }
