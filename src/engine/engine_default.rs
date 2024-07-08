@@ -85,28 +85,6 @@ impl Engine for DefaultEngine {
         self.0.mul(x, log_m)
     }
 
-    fn xor(x: &mut [u8], y: &[u8]) {
-        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-        {
-            if is_x86_feature_detected!("avx2") {
-                return Avx2::xor(x, y);
-            }
-
-            if is_x86_feature_detected!("ssse3") {
-                return Ssse3::xor(x, y);
-            }
-        }
-
-        #[cfg(target_arch = "aarch64")]
-        {
-            if std::arch::is_aarch64_feature_detected!("neon") {
-                return Neon::xor(x, y);
-            }
-        }
-
-        NoSimd::xor(x, y)
-    }
-
     fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {

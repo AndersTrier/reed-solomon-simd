@@ -116,16 +116,6 @@ impl Engine for Naive {
             pos += 64;
         }
     }
-
-    fn xor(x: &mut [u8], y: &[u8]) {
-        let shard_bytes = x.len();
-        debug_assert!(shard_bytes & 63 == 0);
-        debug_assert_eq!(shard_bytes, y.len());
-
-        for i in 0..shard_bytes {
-            x[i] ^= y[i];
-        }
-    }
 }
 
 // ======================================================================

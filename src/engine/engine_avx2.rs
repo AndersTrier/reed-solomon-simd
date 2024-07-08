@@ -75,15 +75,6 @@ impl Engine for Avx2 {
         }
     }
 
-    fn xor(x: &mut [u8], y: &[u8]) {
-        let x: &mut [u64] = bytemuck::cast_slice_mut(x);
-        let y: &[u64] = bytemuck::cast_slice(y);
-
-        for (x64, y64) in zip(x.iter_mut(), y.iter()) {
-            *x64 ^= y64;
-        }
-    }
-
     fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
         unsafe { Self::eval_poly_avx2(erasures, truncated_size) }
     }
