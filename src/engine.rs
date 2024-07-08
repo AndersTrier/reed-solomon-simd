@@ -32,6 +32,8 @@
 //! [`ReedSolomonDecoder`]: crate::ReedSolomonDecoder
 //! [`rate`]: crate::rate
 
+use std::iter::zip;
+
 pub(crate) use self::shards::Shards;
 
 pub use self::{
@@ -210,13 +212,24 @@ pub trait Engine {
     /// `x[] *= log_m`
     fn mul(&self, x: &mut [u8], log_m: GfElement);
 
-    /// `x[] ^= y[]`
-    fn xor(x: &mut [u8], y: &[u8])
-    where
-        Self: Sized;
-
     // ============================================================
     // PROVIDED
+
+    /// `x[] ^= y[]`
+    #[inline(always)]
+    fn xor(xs: &mut [u8], ys: &[u8])
+    where
+        Self: Sized,
+    {
+        debug_assert!(xs.len() % 64 == 0);
+        debug_assert_eq!(xs.len(), ys.len());
+
+        for (x_chunk, y_chunk) in zip(xs.chunks_exact_mut(64), ys.chunks_exact(64)) {
+            for (x, y) in zip(x_chunk.iter_mut(), y_chunk.iter()) {
+                *x ^= y;
+            }
+        }
+    }
 
     /// Evaluate polynomial.
     fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize)
