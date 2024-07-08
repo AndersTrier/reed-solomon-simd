@@ -211,8 +211,8 @@ pub fn initialize_mul128() -> &'static Mul128 {
                     prod_lo[x] = prod as u8;
                     prod_hi[x] = (prod >> 8) as u8;
                 }
-                mul128[log_m as usize].lo[i] = bytemuck::cast(prod_lo);
-                mul128[log_m as usize].hi[i] = bytemuck::cast(prod_hi);
+                mul128[log_m as usize].lo[i] = u128::from_le_bytes(prod_lo);
+                mul128[log_m as usize].hi[i] = u128::from_le_bytes(prod_hi);
             }
         }
 
