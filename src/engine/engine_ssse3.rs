@@ -69,7 +69,7 @@ impl Engine for Ssse3 {
         }
     }
 
-    fn mul(&self, x: &mut [u8], log_m: GfElement) {
+    fn mul(&self, x: &mut [[u8; 64]], log_m: GfElement) {
         unsafe {
             self.mul_ssse3(x, log_m);
         }
@@ -96,10 +96,10 @@ impl Default for Ssse3 {
 
 impl Ssse3 {
     #[target_feature(enable = "ssse3")]
-    unsafe fn mul_ssse3(&self, x: &mut [u8], log_m: GfElement) {
+    unsafe fn mul_ssse3(&self, x: &mut [[u8; 64]], log_m: GfElement) {
         let lut = &self.mul128[log_m as usize];
 
-        for chunk in x.chunks_exact_mut(64) {
+        for chunk in x.iter_mut() {
             let x_ptr = chunk.as_mut_ptr() as *mut __m128i;
             unsafe {
                 let x0_lo = _mm_loadu_si128(x_ptr);
@@ -217,15 +217,9 @@ impl Ssse3 {
 
     // Partial butterfly, caller must do `GF_MODULUS` check with `xor`.
     #[inline(always)]
-    fn fft_butterfly_partial(&self, x: &mut [u8], y: &mut [u8], log_m: GfElement) {
-        // While we wait for array_chunks/slice_as_chunks (#74985) to become stable,
-        // we have to try_into().unwrap() (which cannot fail in this case)
-        for (x_chunk, y_chunk) in zip(x.chunks_exact_mut(64), y.chunks_exact_mut(64)) {
-            self.fftb_128(
-                x_chunk.try_into().unwrap(),
-                y_chunk.try_into().unwrap(),
-                log_m,
-            );
+    fn fft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
+        for (x_chunk, y_chunk) in zip(x.iter_mut(), y.iter_mut()) {
+            self.fftb_128(x_chunk, y_chunk, log_m);
         }
     }
 
@@ -375,15 +369,9 @@ impl Ssse3 {
     }
 
     #[inline(always)]
-    fn ifft_butterfly_partial(&self, x: &mut [u8], y: &mut [u8], log_m: GfElement) {
-        // While we wait for array_chunks/slice_as_chunks (#74985) to become stable,
-        // we'll have to try_into() to array
-        for (x_chunk, y_chunk) in zip(x.chunks_exact_mut(64), y.chunks_exact_mut(64)) {
-            self.ifftb_128(
-                x_chunk.try_into().unwrap(),
-                y_chunk.try_into().unwrap(),
-                log_m,
-            );
+    fn ifft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
+        for (x_chunk, y_chunk) in zip(x.iter_mut(), y.iter_mut()) {
+            self.ifftb_128(x_chunk, y_chunk, log_m);
         }
     }
 

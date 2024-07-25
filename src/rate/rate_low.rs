@@ -211,7 +211,7 @@ impl<E: Engine> RateDecoder<E> for LowRateDecoder<E> {
             if received[i] {
                 self.engine.mul(&mut work[i], erasures[i]);
             } else {
-                work[i].fill(0);
+                work[i].fill([0; 64]);
             }
         }
 
@@ -221,7 +221,7 @@ impl<E: Engine> RateDecoder<E> for LowRateDecoder<E> {
             if received[i] {
                 self.engine.mul(&mut work[i], erasures[i]);
             } else {
-                work[i].fill(0);
+                work[i].fill([0; 64]);
             }
         }
 

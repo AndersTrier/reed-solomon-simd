@@ -80,7 +80,9 @@ impl DecoderWork {
                 got: original_shard.len(),
             })
         } else {
-            self.shards[pos].copy_from_slice(original_shard);
+            self.shards[pos]
+                .as_flattened_mut()
+                .copy_from_slice(original_shard);
             self.original_received_count += 1;
             self.received.set(pos, true);
             Ok(())
@@ -108,7 +110,9 @@ impl DecoderWork {
                 got: recovery_shard.len(),
             })
         } else {
-            self.shards[pos].copy_from_slice(recovery_shard);
+            self.shards[pos]
+                .as_flattened_mut()
+                .copy_from_slice(recovery_shard);
             self.recovery_received_count += 1;
             self.received.set(pos, true);
             Ok(())
@@ -186,7 +190,7 @@ impl DecoderWork {
         let pos = self.original_base_pos + index;
 
         if index < self.original_count && !self.received[pos] {
-            Some(&self.shards[pos])
+            Some(self.shards[pos].as_flattened())
         } else {
             None
         }

@@ -81,7 +81,7 @@ impl Engine for DefaultEngine {
         self.0.ifft(data, pos, size, truncated_size, skew_delta)
     }
 
-    fn mul(&self, x: &mut [u8], log_m: GfElement) {
+    fn mul(&self, x: &mut [[u8; 64]], log_m: GfElement) {
         self.0.mul(x, log_m)
     }
 
