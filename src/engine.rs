@@ -182,21 +182,20 @@ pub trait Engine {
     );
 
     /// `x[] *= log_m`
-    fn mul(&self, x: &mut [u8], log_m: GfElement);
+    fn mul(&self, x: &mut [[u8; 64]], log_m: GfElement);
 
     // ============================================================
     // PROVIDED
 
     /// `x[] ^= y[]`
     #[inline(always)]
-    fn xor(xs: &mut [u8], ys: &[u8])
+    fn xor(xs: &mut [[u8; 64]], ys: &[[u8; 64]])
     where
         Self: Sized,
     {
-        debug_assert!(xs.len() % 64 == 0);
         debug_assert_eq!(xs.len(), ys.len());
 
-        for (x_chunk, y_chunk) in zip(xs.chunks_exact_mut(64), ys.chunks_exact(64)) {
+        for (x_chunk, y_chunk) in zip(xs.iter_mut(), ys.iter()) {
             for (x, y) in zip(x_chunk.iter_mut(), y_chunk.iter()) {
                 *x ^= y;
             }

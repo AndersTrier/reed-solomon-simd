@@ -62,7 +62,9 @@ impl EncoderWork {
                 got: original_shard.len(),
             })
         } else {
-            self.shards[self.original_received_count].copy_from_slice(original_shard);
+            self.shards[self.original_received_count]
+                .as_flattened_mut()
+                .copy_from_slice(original_shard);
             self.original_received_count += 1;
             Ok(())
         }
@@ -86,7 +88,7 @@ impl EncoderWork {
     // This must only be called by `EncoderResult`.
     pub(crate) fn recovery(&self, index: usize) -> Option<&[u8]> {
         if index < self.recovery_count {
-            Some(&self.shards[index])
+            Some(self.shards[index].as_flattened())
         } else {
             None
         }

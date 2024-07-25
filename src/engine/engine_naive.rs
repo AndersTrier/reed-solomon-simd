@@ -100,20 +100,15 @@ impl Engine for Naive {
         }
     }
 
-    fn mul(&self, x: &mut [u8], log_m: GfElement) {
-        let shard_bytes = x.len();
-        debug_assert!(shard_bytes & 63 == 0);
-
-        let mut pos = 0;
-        while pos < shard_bytes {
+    fn mul(&self, x: &mut [[u8; 64]], log_m: GfElement) {
+        for chunk in x.iter_mut() {
             for i in 0..32 {
-                let lo = x[pos + i] as GfElement;
-                let hi = x[pos + i + 32] as GfElement;
+                let lo = chunk[i] as GfElement;
+                let hi = chunk[i + 32] as GfElement;
                 let prod = tables::mul(lo | (hi << 8), log_m, self.exp, self.log);
-                x[pos + i] = prod as u8;
-                x[pos + i + 32] = (prod >> 8) as u8;
+                chunk[i] = prod as u8;
+                chunk[i + 32] = (prod >> 8) as u8;
             }
-            pos += 64;
         }
     }
 }
@@ -132,21 +127,17 @@ impl Default for Naive {
 
 impl Naive {
     /// `x[] ^= y[] * log_m`
-    fn mul_add(&self, x: &mut [u8], y: &[u8], log_m: GfElement) {
-        let shard_bytes = x.len();
-        debug_assert!(shard_bytes & 63 == 0);
-        debug_assert_eq!(shard_bytes, y.len());
+    fn mul_add(&self, x: &mut [[u8; 64]], y: &[[u8; 64]], log_m: GfElement) {
+        debug_assert_eq!(x.len(), y.len());
 
-        let mut pos = 0;
-        while pos < shard_bytes {
+        for (x_chunk, y_chunk) in std::iter::zip(x.iter_mut(), y.iter()) {
             for i in 0..32 {
-                let lo = y[pos + i] as GfElement;
-                let hi = y[pos + i + 32] as GfElement;
+                let lo = y_chunk[i] as GfElement;
+                let hi = y_chunk[i + 32] as GfElement;
                 let prod = tables::mul(lo | (hi << 8), log_m, self.exp, self.log);
-                x[pos + i] ^= prod as u8;
-                x[pos + i + 32] ^= (prod >> 8) as u8;
+                x_chunk[i] ^= prod as u8;
+                x_chunk[i + 32] ^= (prod >> 8) as u8;
             }
-            pos += 64;
         }
     }
 }

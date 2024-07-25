@@ -56,10 +56,10 @@ impl Engine for NoSimd {
         self.ifft_private(data, pos, size, truncated_size, skew_delta);
     }
 
-    fn mul(&self, x: &mut [u8], log_m: GfElement) {
+    fn mul(&self, x: &mut [[u8; 64]], log_m: GfElement) {
         let lut = &self.mul16[log_m as usize];
 
-        for x_chunk in x.chunks_exact_mut(64) {
+        for x_chunk in x.iter_mut() {
             let (x_lo, x_hi) = x_chunk.split_at_mut(32);
 
             for i in 0..32 {
@@ -90,10 +90,10 @@ impl Default for NoSimd {
 
 impl NoSimd {
     /// `x[] ^= y[] * log_m`
-    fn mul_add(&self, x: &mut [u8], y: &[u8], log_m: GfElement) {
+    fn mul_add(&self, x: &mut [[u8; 64]], y: &[[u8; 64]], log_m: GfElement) {
         let lut = &self.mul16[log_m as usize];
 
-        for (x_chunk, y_chunk) in zip(x.chunks_exact_mut(64), y.chunks_exact(64)) {
+        for (x_chunk, y_chunk) in zip(x.iter_mut(), y.iter()) {
             let (x_lo, x_hi) = x_chunk.split_at_mut(32);
             let (y_lo, y_hi) = y_chunk.split_at(32);
 
@@ -117,7 +117,7 @@ impl NoSimd {
 impl NoSimd {
     // Partial butterfly, caller must do `GF_MODULUS` check with `xor`.
     #[inline(always)]
-    fn fft_butterfly_partial(&self, x: &mut [u8], y: &mut [u8], log_m: GfElement) {
+    fn fft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
         self.mul_add(x, y, log_m);
         Self::xor(y, x);
     }
@@ -218,7 +218,7 @@ impl NoSimd {
 impl NoSimd {
     // Partial butterfly, caller must do `GF_MODULUS` check with `xor`.
     #[inline(always)]
-    fn ifft_butterfly_partial(&self, x: &mut [u8], y: &mut [u8], log_m: GfElement) {
+    fn ifft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
         Self::xor(y, x);
         self.mul_add(x, y, log_m);
     }

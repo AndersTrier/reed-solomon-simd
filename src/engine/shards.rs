@@ -8,7 +8,7 @@ pub(crate) struct Shards {
     shard_bytes: usize,
 
     // Flat array of `shard_count * shard_bytes` bytes.
-    data: Vec<u8>,
+    data: Vec<[u8; 64]>,
 }
 
 impl Shards {
@@ -30,7 +30,7 @@ impl Shards {
         self.shard_count = shard_count;
         self.shard_bytes = shard_bytes;
 
-        self.data.resize(shard_count * shard_bytes, 0);
+        self.data.resize(shard_count * (shard_bytes / 64), [0; 64]);
     }
 }
 
@@ -38,9 +38,10 @@ impl Shards {
 // Shards - IMPL Index
 
 impl Index<usize> for Shards {
-    type Output = [u8];
+    type Output = [[u8; 64]];
     fn index(&self, index: usize) -> &Self::Output {
-        &self.data[index * self.shard_bytes..(index + 1) * self.shard_bytes]
+        let shard_chunk_count = self.shard_bytes / 64;
+        &self.data[index * shard_chunk_count..(index + 1) * shard_chunk_count]
     }
 }
 
@@ -49,7 +50,8 @@ impl Index<usize> for Shards {
 
 impl IndexMut<usize> for Shards {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.data[index * self.shard_bytes..(index + 1) * self.shard_bytes]
+        let shard_chunk_count = self.shard_bytes / 64;
+        &mut self.data[index * shard_chunk_count..(index + 1) * shard_chunk_count]
     }
 }
 
@@ -62,7 +64,7 @@ pub struct ShardsRefMut<'a> {
     shard_bytes: usize,
 
     // Flat array of `shard_count * shard_bytes` bytes.
-    data: &'a mut [u8],
+    data: &'a mut [[u8; 64]],
 }
 
 impl<'a> ShardsRefMut<'a> {
@@ -75,12 +77,18 @@ impl<'a> ShardsRefMut<'a> {
     /// If `dist` is `0`.
     ///
     /// [`Naive::fft`]: crate::engine::Naive#method.fft
-    pub fn dist2_mut(&mut self, mut pos: usize, mut dist: usize) -> (&mut [u8], &mut [u8]) {
-        pos *= self.shard_bytes;
-        dist *= self.shard_bytes;
+    pub fn dist2_mut(
+        &mut self,
+        mut pos: usize,
+        mut dist: usize,
+    ) -> (&mut [[u8; 64]], &mut [[u8; 64]]) {
+        let shard_chunk_count = self.shard_bytes / 64;
+
+        pos *= shard_chunk_count;
+        dist *= shard_chunk_count;
 
         let (a, b) = self.data[pos..].split_at_mut(dist);
-        (&mut a[..self.shard_bytes], &mut b[..self.shard_bytes])
+        (&mut a[..shard_chunk_count], &mut b[..shard_chunk_count])
     }
 
     /// Returns mutable references to shards at
@@ -94,23 +102,31 @@ impl<'a> ShardsRefMut<'a> {
     /// If `dist` is `0`.
     ///
     /// [`NoSimd::fft`]: crate::engine::NoSimd#method.fft
+    #[allow(clippy::type_complexity)]
     pub fn dist4_mut(
         &mut self,
         mut pos: usize,
         mut dist: usize,
-    ) -> (&mut [u8], &mut [u8], &mut [u8], &mut [u8]) {
-        pos *= self.shard_bytes;
-        dist *= self.shard_bytes;
+    ) -> (
+        &mut [[u8; 64]],
+        &mut [[u8; 64]],
+        &mut [[u8; 64]],
+        &mut [[u8; 64]],
+    ) {
+        let shard_chunk_count = self.shard_bytes / 64;
+
+        pos *= shard_chunk_count;
+        dist *= shard_chunk_count;
 
         let (ab, cd) = self.data[pos..].split_at_mut(dist * 2);
         let (a, b) = ab.split_at_mut(dist);
         let (c, d) = cd.split_at_mut(dist);
 
         (
-            &mut a[..self.shard_bytes],
-            &mut b[..self.shard_bytes],
-            &mut c[..self.shard_bytes],
-            &mut d[..self.shard_bytes],
+            &mut a[..shard_chunk_count],
+            &mut b[..shard_chunk_count],
+            &mut c[..shard_chunk_count],
+            &mut d[..shard_chunk_count],
         )
     }
 
@@ -129,18 +145,21 @@ impl<'a> ShardsRefMut<'a> {
     /// # Panics
     ///
     /// If `data` is smaller than `shard_count * shard_bytes` bytes.
-    pub fn new(shard_count: usize, shard_bytes: usize, data: &'a mut [u8]) -> Self {
+    pub fn new(shard_count: usize, shard_bytes: usize, data: &'a mut [[u8; 64]]) -> Self {
         Self {
             shard_count,
             shard_bytes,
-            data: &mut data[..shard_count * shard_bytes],
+            data: &mut data[..shard_count * (shard_bytes / 64)],
         }
     }
 
     /// Splits this [`ShardsRefMut`] into two so that
     /// first includes shards `0..mid` and second includes shards `mid..`.
     pub fn split_at_mut(&mut self, mid: usize) -> (ShardsRefMut, ShardsRefMut) {
-        let (a, b) = self.data.split_at_mut(mid * self.shard_bytes);
+        let shard_chunk_count = self.shard_bytes / 64;
+
+        let (a, b) = self.data.split_at_mut(mid * shard_chunk_count);
+
         (
             ShardsRefMut::new(mid, self.shard_bytes, a),
             ShardsRefMut::new(self.shard_count - mid, self.shard_bytes, b),
@@ -149,19 +168,21 @@ impl<'a> ShardsRefMut<'a> {
 
     /// Fills the given shard-range with `0u8`:s.
     pub fn zero<R: RangeBounds<usize>>(&mut self, range: R) {
+        let shard_chunk_count = self.shard_bytes / 64;
+
         let start = match range.start_bound() {
-            Bound::Included(start) => start * self.shard_bytes,
-            Bound::Excluded(start) => (start + 1) * self.shard_bytes,
+            Bound::Included(start) => start * shard_chunk_count,
+            Bound::Excluded(start) => (start + 1) * shard_chunk_count,
             Bound::Unbounded => 0,
         };
 
         let end = match range.end_bound() {
-            Bound::Included(end) => (end + 1) * self.shard_bytes,
-            Bound::Excluded(end) => end * self.shard_bytes,
-            Bound::Unbounded => self.shard_count * self.shard_bytes,
+            Bound::Included(end) => (end + 1) * shard_chunk_count,
+            Bound::Excluded(end) => end * shard_chunk_count,
+            Bound::Unbounded => self.shard_count * shard_chunk_count,
         };
 
-        self.data[start..end].fill(0);
+        self.data[start..end].fill([0; 64]);
     }
 }
 
@@ -169,9 +190,10 @@ impl<'a> ShardsRefMut<'a> {
 // ShardsRefMut - IMPL Index
 
 impl<'a> Index<usize> for ShardsRefMut<'a> {
-    type Output = [u8];
+    type Output = [[u8; 64]];
     fn index(&self, index: usize) -> &Self::Output {
-        &self.data[index * self.shard_bytes..(index + 1) * self.shard_bytes]
+        let shard_chunk_count = self.shard_bytes / 64;
+        &self.data[index * shard_chunk_count..(index + 1) * shard_chunk_count]
     }
 }
 
@@ -180,7 +202,8 @@ impl<'a> Index<usize> for ShardsRefMut<'a> {
 
 impl<'a> IndexMut<usize> for ShardsRefMut<'a> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.data[index * self.shard_bytes..(index + 1) * self.shard_bytes]
+        let shard_chunk_count = self.shard_bytes / 64;
+        &mut self.data[index * shard_chunk_count..(index + 1) * shard_chunk_count]
     }
 }
 
@@ -189,9 +212,11 @@ impl<'a> IndexMut<usize> for ShardsRefMut<'a> {
 
 impl<'a> ShardsRefMut<'a> {
     pub(crate) fn copy_within(&mut self, mut src: usize, mut dest: usize, mut count: usize) {
-        src *= self.shard_bytes;
-        dest *= self.shard_bytes;
-        count *= self.shard_bytes;
+        let shard_chunk_count = self.shard_bytes / 64;
+
+        src *= shard_chunk_count;
+        dest *= shard_chunk_count;
+        count *= shard_chunk_count;
 
         self.data.copy_within(src..src + count, dest);
     }
@@ -205,10 +230,12 @@ impl<'a> ShardsRefMut<'a> {
         mut x: usize,
         mut y: usize,
         mut count: usize,
-    ) -> (&mut [u8], &mut [u8]) {
-        x *= self.shard_bytes;
-        y *= self.shard_bytes;
-        count *= self.shard_bytes;
+    ) -> (&mut [[u8; 64]], &mut [[u8; 64]]) {
+        let shard_chunk_count = self.shard_bytes / 64;
+
+        x *= shard_chunk_count;
+        y *= shard_chunk_count;
+        count *= shard_chunk_count;
 
         if x < y {
             let (head, tail) = self.data.split_at_mut(y);
