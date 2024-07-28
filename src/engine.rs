@@ -128,34 +128,6 @@ pub(crate) fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: us
 }
 
 // ======================================================================
-// FUNCTIONS - PUBLIC - misc
-
-/// Returns smallest value that is greater than or equal to `a` and multiple of `b`,
-/// or `None` if `b` is zero or operation would overflow.
-///
-/// - This function is available as [`usize::checked_next_multiple_of`] in nightly Rust.
-///
-/// # Examples
-///
-/// ```rust
-/// use reed_solomon_simd::engine;
-///
-/// assert_eq!(engine::checked_next_multiple_of(20, 10), Some(20));
-/// assert_eq!(engine::checked_next_multiple_of(27, 10), Some(30));
-/// ```
-///
-/// [`usize::checked_next_multiple_of`]: https://doc.rust-lang.org/std/primitive.usize.html#method.checked_next_multiple_of
-pub fn checked_next_multiple_of(a: usize, b: usize) -> Option<usize> {
-    if b == 0 {
-        None
-    } else {
-        let mut x = a / b;
-        x += if a % b != 0 { 1 } else { 0 };
-        x.checked_mul(b)
-    }
-}
-
-// ======================================================================
 // Engine - PUBLIC
 
 /// Implementation of basic low-level algorithms needed
@@ -291,21 +263,3 @@ pub trait Engine {
 // TESTS
 
 // Engines are tested indirectly via roundtrip tests of HighRate and LowRate.
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    // ============================================================
-    // checked_next_multiple_of
-
-    #[test]
-    fn test_checked_next_multiple_of() {
-        assert_eq!(checked_next_multiple_of(10, 0), None);
-        assert_eq!(checked_next_multiple_of(usize::MAX, 2), None);
-
-        assert_eq!(checked_next_multiple_of(99, 20), Some(100));
-        assert_eq!(checked_next_multiple_of(100, 20), Some(100));
-        assert_eq!(checked_next_multiple_of(101, 20), Some(120));
-    }
-}

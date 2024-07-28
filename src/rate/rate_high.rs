@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::{
-    engine::{self, Engine, GF_MODULUS, GF_ORDER},
+    engine::{Engine, GF_MODULUS, GF_ORDER},
     rate::{DecoderWork, EncoderWork, Rate, RateDecoder, RateEncoder},
     DecoderResult, EncoderResult, Error,
 };
@@ -133,7 +133,7 @@ impl<E: Engine> HighRateEncoder<E> {
 
         let chunk_size = recovery_count.next_power_of_two();
 
-        engine::checked_next_multiple_of(original_count, chunk_size).unwrap()
+        original_count.next_multiple_of(chunk_size)
     }
 }
 
