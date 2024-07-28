@@ -24,13 +24,21 @@ const SHARD_BYTES: usize = 1024;
 // ======================================================================
 // UTIL
 
-fn generate_shards(shard_count: usize, shard_bytes: usize, seed: u8) -> Vec<Vec<u8>> {
+fn generate_shards_64(shard_count: usize, chunk_count: usize, seed: u8) -> Vec<Vec<[u8; 64]>> {
     let mut rng = ChaCha8Rng::from_seed([seed; 32]);
-    let mut shards = vec![vec![0u8; shard_bytes]; shard_count];
+    let mut shards = vec![vec![[0u8; 64]; chunk_count]; shard_count];
     for shard in &mut shards {
-        rng.fill::<[u8]>(shard);
+        rng.fill::<[u8]>(shard.as_flattened_mut());
     }
     shards
+}
+
+fn generate_shards(shard_count: usize, shard_bytes: usize, seed: u8) -> Vec<Vec<u8>> {
+    assert_eq!(shard_bytes % 64, 0);
+    generate_shards_64(shard_count, shard_bytes / 64, seed)
+        .into_iter()
+        .map(|s| s.into_flattened())
+        .collect()
 }
 
 // ======================================================================
@@ -318,8 +326,8 @@ fn benchmarks_engine_one<E: Engine>(c: &mut Criterion, name: &str, engine: E) {
 
     // XOR MUL
 
-    let mut x = &mut generate_shards(1, SHARD_BYTES, 0)[0];
-    let y = &generate_shards(1, SHARD_BYTES, 1)[0];
+    let mut x = &mut generate_shards_64(1, SHARD_BYTES, 0)[0];
+    let y = &generate_shards_64(1, SHARD_BYTES, 1)[0];
 
     group.bench_function("xor", |b| {
         b.iter(|| E::xor(black_box(&mut x), black_box(&y)))
@@ -331,7 +339,7 @@ fn benchmarks_engine_one<E: Engine>(c: &mut Criterion, name: &str, engine: E) {
 
     // XOR_WITHIN
 
-    let shards_256_data = &mut generate_shards(1, 256 * SHARD_BYTES, 0)[0];
+    let shards_256_data = &mut generate_shards_64(1, 256 * SHARD_BYTES, 0)[0];
     let mut shards_256 = ShardsRefMut::new(256, SHARD_BYTES, shards_256_data.as_mut());
 
     group.bench_function("xor_within 128*2", |b| {
@@ -347,7 +355,7 @@ fn benchmarks_engine_one<E: Engine>(c: &mut Criterion, name: &str, engine: E) {
 
     // FORMAL DERIVATIVE
 
-    let shards_128_data = &mut generate_shards(1, 128 * SHARD_BYTES, 0)[0];
+    let shards_128_data = &mut generate_shards_64(1, 128 * SHARD_BYTES, 0)[0];
     let mut shards_128 = ShardsRefMut::new(128, SHARD_BYTES, shards_128_data.as_mut());
 
     group.bench_function("formal_derivative 128", |b| {
