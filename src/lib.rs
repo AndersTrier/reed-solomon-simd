@@ -75,7 +75,7 @@ pub enum Error {
     },
 
     /// Given or inferred shard size is invalid:
-    /// Size must be non-zero and multiple of 64 bytes.
+    /// Size must be non-zero and even.
     ///
     /// - Shard size is given explicitly to encoders/decoders
     ///   and inferred for [`reed_solomon_simd::encode`]
@@ -171,7 +171,7 @@ impl fmt::Display for Error {
             Error::InvalidShardSize { shard_bytes } => {
                 write!(
                     f,
-                    "invalid shard size: {} bytes (must non-zero and multiple of 64)",
+                    "invalid shard size: {} bytes (must non-zero and multiple of 2)",
                     shard_bytes
                 )
             }
