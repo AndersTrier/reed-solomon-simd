@@ -33,6 +33,12 @@ impl<'a> DecoderResult<'a> {
     pub fn get(&self, index: usize) -> Option<&[u8]> {
         self.work.get(index)
     }
+
+    /// Returns iterator over all original shards,
+    /// ordered by indexes.
+    pub fn iter(&self) -> AllOriginal {
+        AllOriginal::new(self.work)
+    }
 }
 
 // ======================================================================
@@ -102,6 +108,41 @@ impl<'a> RestoredOriginal<'a> {
 }
 
 // ======================================================================
+// AllOriginal - PUBLIC
+
+/// Iterator over all original shards.
+///
+/// This struct is created by [`DecoderResult::iter`].
+pub struct AllOriginal<'a> {
+    index: usize,
+    work: &'a DecoderWork,
+}
+
+// ======================================================================
+// AllOriginal - IMPL Iterator
+
+impl<'a> Iterator for AllOriginal<'a> {
+    type Item = &'a [u8];
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(original) = self.work.get(self.index) {
+            self.index += 1;
+            Some(original)
+        } else {
+            None
+        }
+    }
+}
+
+// ======================================================================
+// AllOriginal - CRATE
+
+impl<'a> AllOriginal<'a> {
+    pub(crate) fn new(work: &'a DecoderWork) -> Self {
+        Self { index: 0, work }
+    }
+}
+
+// ======================================================================
 // TESTS
 
 #[cfg(test)]
@@ -140,6 +181,42 @@ mod tests {
         let mut iter: RestoredOriginal = result.restored_original_iter();
         assert_eq!(iter.next(), Some((0, original[0].as_slice())));
         assert_eq!(iter.next(), Some((2, original[2].as_slice())));
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    // DecoderResult::get
+    // DecoderResult::iter
+    // AllOriginal
+    fn decoder_result_all() {
+        let original = test_util::generate_original(3, 1024, 0);
+
+        let mut encoder = ReedSolomonEncoder::new(3, 2, 1024).unwrap();
+        let mut decoder = ReedSolomonDecoder::new(3, 2, 1024).unwrap();
+
+        for original in &original {
+            encoder.add_original_shard(original).unwrap();
+        }
+
+        let result = encoder.encode().unwrap();
+        let recovery: Vec<_> = result.recovery_iter().collect();
+
+        decoder.add_original_shard(1, &original[1]).unwrap();
+        decoder.add_recovery_shard(0, recovery[0]).unwrap();
+        decoder.add_recovery_shard(1, recovery[1]).unwrap();
+
+        let result: DecoderResult = decoder.decode().unwrap();
+
+        assert_eq!(result.get(0).unwrap(), original[0]);
+        assert_eq!(result.get(1).unwrap(), original[1]);
+        assert_eq!(result.get(2).unwrap(), original[2]);
+        assert!(result.get(3).is_none());
+
+        let mut iter: AllOriginal = result.iter();
+        assert_eq!(iter.next(), Some(original[0].as_slice()));
+        assert_eq!(iter.next(), Some(original[1].as_slice()));
+        assert_eq!(iter.next(), Some(original[2].as_slice()));
         assert_eq!(iter.next(), None);
         assert_eq!(iter.next(), None);
     }
