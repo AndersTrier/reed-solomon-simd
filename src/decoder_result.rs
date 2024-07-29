@@ -27,6 +27,12 @@ impl<'a> DecoderResult<'a> {
     pub fn restored_original_iter(&self) -> RestoredOriginal {
         RestoredOriginal::new(self.work)
     }
+
+    /// Returns the original shard with given `index`
+    /// or `None` if out of bounds.
+    pub fn get(&self, index: usize) -> Option<&[u8]> {
+        self.work.get(index)
+    }
 }
 
 // ======================================================================

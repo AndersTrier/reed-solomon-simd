@@ -191,4 +191,15 @@ impl DecoderWork {
             None
         }
     }
+
+    // This must only be called by `DecoderResult`.
+    pub(crate) fn get(&self, index: usize) -> Option<&[u8]> {
+        let pos = self.original_base_pos + index;
+
+        if index < self.original_count {
+            Some(&self.shards[pos])
+        } else {
+            None
+        }
+    }
 }
