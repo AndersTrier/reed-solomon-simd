@@ -69,7 +69,7 @@ $ cargo bench main
 ## Simple usage
 
 1. Divide data into equal-sized original shards.
-   Shard size must be multiple of 64 bytes.
+   Shard size must be even (`shard.len() % 2 == 0`).
 2. Decide how many recovery shards you want.
 3. Generate recovery shards with [`reed_solomon_simd::encode`].
 4. When some original shards get lost, restore them with [`reed_solomon_simd::decode`].
