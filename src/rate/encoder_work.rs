@@ -115,4 +115,9 @@ impl EncoderWork {
     pub(crate) fn reset_received(&mut self) {
         self.original_received_count = 0;
     }
+
+    pub(crate) fn undo_last_chunk_encoding(&mut self) {
+        self.shards
+            .undo_last_chunk_encoding(self.shard_bytes, 0..self.recovery_count);
+    }
 }

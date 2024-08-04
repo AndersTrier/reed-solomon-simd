@@ -195,4 +195,11 @@ impl DecoderWork {
             None
         }
     }
+
+    pub(crate) fn undo_last_chunk_encoding(&mut self) {
+        self.shards.undo_last_chunk_encoding(
+            self.shard_bytes,
+            self.original_base_pos..self.original_base_pos + self.original_count,
+        );
+    }
 }
