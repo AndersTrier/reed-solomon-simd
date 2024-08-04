@@ -32,6 +32,29 @@ impl Shards {
         self.data
             .resize(self.shard_count * self.shard_len_64, [0; 64]);
     }
+
+    pub(crate) fn insert(&mut self, index: usize, shard: &[u8]) {
+        assert_eq!(shard.len() % 2, 0);
+
+        let chunks_64 = shard.len() / 64;
+        let tail_len = shard.len() % 64;
+
+        let (src_chunks, src_tail) = shard.split_at(shard.len() - tail_len);
+
+        let dst = &mut self[index];
+        dst[..chunks_64]
+            .as_flattened_mut()
+            .copy_from_slice(src_chunks);
+
+        // Last chunk is special if shard.len() % 64 != 0.
+        // See src/algorithm.md for an explanation.
+        if tail_len > 0 {
+            let (src_lo, src_hi) = src_tail.split_at(tail_len / 2);
+            let (dst_lo, dst_hi) = dst[chunks_64].split_at_mut(32);
+            dst_lo[..src_lo.len()].copy_from_slice(src_lo);
+            dst_hi[..src_hi.len()].copy_from_slice(src_hi);
+        }
+    }
 }
 
 // ======================================================================
