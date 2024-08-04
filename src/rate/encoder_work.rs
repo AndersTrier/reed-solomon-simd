@@ -101,12 +101,14 @@ impl EncoderWork {
         shard_bytes: usize,
         work_count: usize,
     ) {
+        assert!(shard_bytes % 64 == 0);
+
         self.original_count = original_count;
         self.recovery_count = recovery_count;
         self.shard_bytes = shard_bytes;
 
         self.original_received_count = 0;
-        self.shards.resize(work_count, shard_bytes);
+        self.shards.resize(work_count, shard_bytes / 64);
     }
 
     pub(crate) fn reset_received(&mut self) {
