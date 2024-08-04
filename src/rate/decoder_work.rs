@@ -193,4 +193,11 @@ impl DecoderWork {
             None
         }
     }
+
+    pub(crate) fn simd_unpack(&mut self) {
+        self.shards.simd_unpack(
+            self.shard_bytes,
+            self.original_base_pos..self.original_base_pos + self.original_count,
+        );
+    }
 }
