@@ -77,6 +77,10 @@ impl<E: Engine> RateEncoder<E> for LowRateEncoder<E> {
             engine::fft_skew_end(engine, &mut work, chunk_start, chunk_size, last_count);
         }
 
+        // UNPACK
+
+        self.work.simd_unpack();
+
         // DONE
 
         Ok(EncoderResult::new(&mut self.work))
@@ -240,6 +244,10 @@ impl<E: Engine> RateDecoder<E> for LowRateDecoder<E> {
                 self.engine.mul(&mut work[i], GF_MODULUS - erasures[i]);
             }
         }
+
+        // UNPACK
+
+        self.work.simd_unpack();
 
         // DONE
 

@@ -1,4 +1,4 @@
-use std::ops::{Bound, Index, IndexMut, RangeBounds};
+use std::ops::{Bound, Index, IndexMut, Range, RangeBounds};
 
 // ======================================================================
 // Shards - CRATE
@@ -53,6 +53,21 @@ impl Shards {
             let (dst_lo, dst_hi) = dst[chunks_64].split_at_mut(32);
             dst_lo[..src_lo.len()].copy_from_slice(src_lo);
             dst_hi[..src_hi.len()].copy_from_slice(src_hi);
+        }
+    }
+
+    // Undoes the simd encoding of the last chunk for the given range of shards
+    pub(crate) fn simd_unpack(&mut self, shard_bytes: usize, range: Range<usize>) {
+        let chunks_64 = shard_bytes / 64;
+        let tail_len = shard_bytes % 64;
+
+        if tail_len == 0 {
+            return;
+        };
+
+        for idx in range {
+            let last_chunk = &mut self[idx][chunks_64];
+            last_chunk.copy_within(32..32 + tail_len / 2, tail_len / 2);
         }
     }
 }

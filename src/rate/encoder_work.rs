@@ -115,4 +115,9 @@ impl EncoderWork {
     pub(crate) fn reset_received(&mut self) {
         self.original_received_count = 0;
     }
+
+    pub(crate) fn simd_unpack(&mut self) {
+        self.shards
+            .simd_unpack(self.shard_bytes, 0..self.recovery_count);
+    }
 }
