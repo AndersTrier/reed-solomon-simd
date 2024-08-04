@@ -137,4 +137,35 @@ mod tests {
         assert_eq!(iter.next(), None);
         assert_eq!(iter.next(), None);
     }
+
+    #[test]
+    fn shard_size_not_divisible_by_64() {
+        for shard_size in [2, 4, 6, 30, 32, 34, 62, 64, 66, 126, 128, 130] {
+            let original =
+                test_util::generate_original(3, shard_size, shard_size as u8 /* seed */);
+
+            let mut encoder = ReedSolomonEncoder::new(3, 2, shard_size).unwrap();
+            let mut decoder = ReedSolomonDecoder::new(3, 2, shard_size).unwrap();
+
+            for original in &original {
+                encoder.add_original_shard(original).unwrap();
+            }
+
+            let result = encoder.encode().unwrap();
+            let recovery: Vec<_> = result.recovery_iter().collect();
+
+            assert!(recovery.iter().all(|slice| slice.len() == shard_size));
+
+            decoder.add_original_shard(1, &original[1]).unwrap();
+            decoder.add_recovery_shard(0, recovery[0]).unwrap();
+            decoder.add_recovery_shard(1, recovery[1]).unwrap();
+
+            let result: DecoderResult = decoder.decode().unwrap();
+
+            assert_eq!(result.restored_original(0).unwrap(), original[0]);
+            assert_eq!(result.restored_original(1), None);
+            assert_eq!(result.restored_original(2).unwrap(), original[2]);
+            assert_eq!(result.restored_original(3), None);
+        }
+    }
 }
