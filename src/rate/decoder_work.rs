@@ -80,9 +80,8 @@ impl DecoderWork {
                 got: original_shard.len(),
             })
         } else {
-            self.shards[pos]
-                .as_flattened_mut()
-                .copy_from_slice(original_shard);
+            self.shards.insert(pos, original_shard);
+
             self.original_received_count += 1;
             self.received.set(pos, true);
             Ok(())
@@ -110,9 +109,8 @@ impl DecoderWork {
                 got: recovery_shard.len(),
             })
         } else {
-            self.shards[pos]
-                .as_flattened_mut()
-                .copy_from_slice(recovery_shard);
+            self.shards.insert(pos, recovery_shard);
+
             self.recovery_received_count += 1;
             self.received.set(pos, true);
             Ok(())
@@ -190,9 +188,16 @@ impl DecoderWork {
         let pos = self.original_base_pos + index;
 
         if index < self.original_count && !self.received[pos] {
-            Some(self.shards[pos].as_flattened())
+            Some(&self.shards[pos].as_flattened()[..self.shard_bytes])
         } else {
             None
         }
+    }
+
+    pub(crate) fn simd_unpack(&mut self) {
+        self.shards.simd_unpack(
+            self.shard_bytes,
+            self.original_base_pos..self.original_base_pos + self.original_count,
+        );
     }
 }

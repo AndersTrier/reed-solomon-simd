@@ -77,6 +77,10 @@ impl<E: Engine> RateEncoder<E> for HighRateEncoder<E> {
 
         engine.fft(&mut work, 0, chunk_size, recovery_count, 0);
 
+        // UNPACK
+
+        self.work.simd_unpack();
+
         // DONE
 
         Ok(EncoderResult::new(&mut self.work))
@@ -240,6 +244,10 @@ impl<E: Engine> RateDecoder<E> for HighRateDecoder<E> {
                 self.engine.mul(&mut work[i], GF_MODULUS - erasures[i]);
             }
         }
+
+        // UNPACK
+
+        self.work.simd_unpack();
 
         // DONE
 
