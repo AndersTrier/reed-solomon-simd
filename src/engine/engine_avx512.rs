@@ -109,103 +109,73 @@ impl Avx512 {
     unsafe fn mul_avx512(&self, x: &mut [u8], log_m: GfElement) {
         let lut = &self.mul128[log_m as usize];
 
-        let mut x_chunks_iter = x.chunks_exact_mut(128);
+        let mut x_chunks_iter = x.chunks_exact_mut(64);
         for chunk in &mut x_chunks_iter {
-            let x_ptr = chunk.as_mut_ptr() as *mut __m256i;
+            let x_ptr = chunk.as_mut_ptr() as *mut i32;
             unsafe {
-                let mut x0_lo = _mm256_loadu_si256(x_ptr);
-                let mut x0_hi = _mm256_loadu_si256(x_ptr.add(1));
-                let mut x1_lo = _mm256_loadu_si256(x_ptr.add(2));
-                let mut x1_hi = _mm256_loadu_si256(x_ptr.add(3));
-
-                (x0_lo, x0_hi, x1_lo, x1_hi) = Self::mul_512(x0_lo, x0_hi, x1_lo, x1_hi, lut);
-
-                _mm256_storeu_si256(x_ptr, x0_lo);
-                _mm256_storeu_si256(x_ptr.add(1), x0_hi);
-                _mm256_storeu_si256(x_ptr.add(2), x1_lo);
-                _mm256_storeu_si256(x_ptr.add(3), x1_hi);
-            }
-        }
-
-        // 64 byte left?
-        if let Ok(chunk) = TryInto::<&mut [u8; 64]>::try_into(x_chunks_iter.into_remainder()) {
-            let x_ptr = chunk.as_mut_ptr() as *mut __m256i;
-            unsafe {
-                let mut x_lo = _mm256_loadu_si256(x_ptr);
-                let mut x_hi = _mm256_loadu_si256(x_ptr.add(1));
-                let zero = _mm256_setzero_si256();
-
-                (x_lo, x_hi, _, _) = Self::mul_512(x_lo, x_hi, zero, zero, lut);
-
-                _mm256_storeu_si256(x_ptr, x_lo);
-                _mm256_storeu_si256(x_ptr.add(1), x_hi);
+                let x = _mm512_loadu_si512(x_ptr);
+                let prod = Self::mul_512(x, lut);
+                _mm512_storeu_si512(x_ptr, prod);
             }
         }
     }
 
     // Impelemntation of LEO_MUL_256
     #[inline(always)]
-    fn mul_512(
-        value0_lo: __m256i,
-        value0_hi: __m256i,
-        value1_lo: __m256i,
-        value1_hi: __m256i,
-        lut: &Multiply128lutT,
-    ) -> (__m256i, __m256i, __m256i, __m256i) {
+    fn mul_512(value: __m512i, lut: &Multiply128lutT) -> __m512i {
         unsafe {
-            let value_lo = _mm512_inserti64x4(_mm512_castsi256_si512(value0_lo), value1_lo, 1);
-            let value_hi = _mm512_inserti64x4(_mm512_castsi256_si512(value0_hi), value1_hi, 1);
-
-            let t0_lo = _mm512_broadcast_i32x4(_mm_loadu_si128(
+            let t0_lo = _mm256_broadcastsi128_si256(_mm_loadu_si128(
                 &lut.lo[0] as *const u128 as *const __m128i,
             ));
-            let t1_lo = _mm512_broadcast_i32x4(_mm_loadu_si128(
+            let t1_lo = _mm256_broadcastsi128_si256(_mm_loadu_si128(
                 &lut.lo[1] as *const u128 as *const __m128i,
             ));
-            let t2_lo = _mm512_broadcast_i32x4(_mm_loadu_si128(
+            let t2_lo = _mm256_broadcastsi128_si256(_mm_loadu_si128(
                 &lut.lo[2] as *const u128 as *const __m128i,
             ));
-            let t3_lo = _mm512_broadcast_i32x4(_mm_loadu_si128(
+            let t3_lo = _mm256_broadcastsi128_si256(_mm_loadu_si128(
                 &lut.lo[3] as *const u128 as *const __m128i,
             ));
 
-            let t0_hi = _mm512_broadcast_i32x4(_mm_loadu_si128(
+            let t0_hi = _mm256_broadcastsi128_si256(_mm_loadu_si128(
                 &lut.hi[0] as *const u128 as *const __m128i,
             ));
-            let t1_hi = _mm512_broadcast_i32x4(_mm_loadu_si128(
+            let t1_hi = _mm256_broadcastsi128_si256(_mm_loadu_si128(
                 &lut.hi[1] as *const u128 as *const __m128i,
             ));
-            let t2_hi = _mm512_broadcast_i32x4(_mm_loadu_si128(
+            let t2_hi = _mm256_broadcastsi128_si256(_mm_loadu_si128(
                 &lut.hi[2] as *const u128 as *const __m128i,
             ));
-            let t3_hi = _mm512_broadcast_i32x4(_mm_loadu_si128(
+            let t3_hi = _mm256_broadcastsi128_si256(_mm_loadu_si128(
                 &lut.hi[3] as *const u128 as *const __m128i,
             ));
 
+            let t0_t2_lo = _mm512_inserti64x4(_mm512_castsi256_si512(t0_lo), t2_lo, 1);
+            let t0_t2_hi = _mm512_inserti64x4(_mm512_castsi256_si512(t0_hi), t2_hi, 1);
+            let t1_t3_lo = _mm512_inserti64x4(_mm512_castsi256_si512(t1_lo), t3_lo, 1);
+            let t1_t3_hi = _mm512_inserti64x4(_mm512_castsi256_si512(t1_hi), t3_hi, 1);
+
             let clr_mask = _mm512_set1_epi8(0x0f);
 
-            let data_0 = _mm512_and_si512(value_lo, clr_mask);
-            let mut prod_lo = _mm512_shuffle_epi8(t0_lo, data_0);
-            let mut prod_hi = _mm512_shuffle_epi8(t0_hi, data_0);
+            let data = _mm512_and_si512(value, clr_mask);
+            let mut prod_lo_512 = _mm512_shuffle_epi8(t0_t2_lo, data);
+            let mut prod_hi_512 = _mm512_shuffle_epi8(t0_t2_hi, data);
 
-            let data_1 = _mm512_and_si512(_mm512_srli_epi64(value_lo, 4), clr_mask);
-            prod_lo = _mm512_xor_si512(prod_lo, _mm512_shuffle_epi8(t1_lo, data_1));
-            prod_hi = _mm512_xor_si512(prod_hi, _mm512_shuffle_epi8(t1_hi, data_1));
+            let data = _mm512_and_si512(_mm512_srli_epi64(value, 4), clr_mask);
+            prod_lo_512 = _mm512_xor_si512(prod_lo_512, _mm512_shuffle_epi8(t1_t3_lo, data));
+            prod_hi_512 = _mm512_xor_si512(prod_hi_512, _mm512_shuffle_epi8(t1_t3_hi, data));
 
-            let data_0 = _mm512_and_si512(value_hi, clr_mask);
-            prod_lo = _mm512_xor_si512(prod_lo, _mm512_shuffle_epi8(t2_lo, data_0));
-            prod_hi = _mm512_xor_si512(prod_hi, _mm512_shuffle_epi8(t2_hi, data_0));
+            // XOR first half with second half of vector
+            let prod_lo = _mm256_xor_si256(
+                _mm512_castsi512_si256(prod_lo_512),
+                _mm512_extracti64x4_epi64(prod_lo_512, 1),
+            );
+            let prod_hi = _mm256_xor_si256(
+                _mm512_castsi512_si256(prod_hi_512),
+                _mm512_extracti64x4_epi64(prod_hi_512, 1),
+            );
 
-            let data_1 = _mm512_and_si512(_mm512_srli_epi64(value_hi, 4), clr_mask);
-            prod_lo = _mm512_xor_si512(prod_lo, _mm512_shuffle_epi8(t3_lo, data_1));
-            prod_hi = _mm512_xor_si512(prod_hi, _mm512_shuffle_epi8(t3_hi, data_1));
-
-            let prod0_lo = _mm512_extracti64x4_epi64(prod_lo, 0);
-            let prod0_hi = _mm512_extracti64x4_epi64(prod_hi, 0);
-            let prod1_lo = _mm512_extracti64x4_epi64(prod_lo, 1);
-            let prod1_hi = _mm512_extracti64x4_epi64(prod_hi, 1);
-
-            (prod0_lo, prod0_hi, prod1_lo, prod1_hi)
+            _mm512_inserti64x4(_mm512_castsi256_si512(prod_lo), prod_hi, 1)
         }
     }
 
@@ -213,27 +183,10 @@ impl Avx512 {
     // Implementation of LEO_MULADD_256
     #[allow(clippy::too_many_arguments)]
     #[inline(always)]
-    fn muladd_512(
-        mut x0_lo: __m256i,
-        mut x0_hi: __m256i,
-        mut x1_lo: __m256i,
-        mut x1_hi: __m256i,
-        y0_lo: __m256i,
-        y0_hi: __m256i,
-        y1_lo: __m256i,
-        y1_hi: __m256i,
-        lut: &Multiply128lutT,
-    ) -> (__m256i, __m256i, __m256i, __m256i) {
+    fn muladd_512(x: __m512i, y: __m512i, lut: &Multiply128lutT) -> __m512i {
         unsafe {
-            let (prod0_lo, prod0_hi, prod1_lo, prod1_hi) =
-                Self::mul_512(y0_lo, y0_hi, y1_lo, y1_hi, lut);
-
-            x0_lo = _mm256_xor_si256(x0_lo, prod0_lo);
-            x0_hi = _mm256_xor_si256(x0_hi, prod0_hi);
-            x1_lo = _mm256_xor_si256(x1_lo, prod1_lo);
-            x1_hi = _mm256_xor_si256(x1_hi, prod1_hi);
-
-            (x0_lo, x0_hi, x1_lo, x1_hi)
+            let prod = Self::mul_512(y, lut);
+            _mm512_xor_si512(x, prod)
         }
     }
 }
@@ -248,69 +201,21 @@ impl Avx512 {
     fn fft_butterfly_partial(&self, x: &mut [u8], y: &mut [u8], log_m: GfElement) {
         let lut = &self.mul128[log_m as usize];
 
-        let mut x_chunks_iter = x.chunks_exact_mut(128);
-        let mut y_chunks_iter = y.chunks_exact_mut(128);
+        let mut x_chunks_iter = x.chunks_exact_mut(64);
+        let mut y_chunks_iter = y.chunks_exact_mut(64);
         for (x_chunk, y_chunk) in zip(&mut x_chunks_iter, &mut y_chunks_iter) {
-            let x_ptr = x_chunk.as_mut_ptr() as *mut __m256i;
-            let y_ptr = y_chunk.as_mut_ptr() as *mut __m256i;
+            let x_ptr = x_chunk.as_mut_ptr() as *mut i32;
+            let y_ptr = y_chunk.as_mut_ptr() as *mut i32;
 
             unsafe {
-                let mut x0_lo = _mm256_loadu_si256(x_ptr);
-                let mut x0_hi = _mm256_loadu_si256(x_ptr.add(1));
-                let mut x1_lo = _mm256_loadu_si256(x_ptr.add(2));
-                let mut x1_hi = _mm256_loadu_si256(x_ptr.add(3));
+                let mut x = _mm512_loadu_si512(x_ptr);
+                let mut y = _mm512_loadu_si512(y_ptr);
 
-                let mut y0_lo = _mm256_loadu_si256(y_ptr);
-                let mut y0_hi = _mm256_loadu_si256(y_ptr.add(1));
-                let mut y1_lo = _mm256_loadu_si256(y_ptr.add(2));
-                let mut y1_hi = _mm256_loadu_si256(y_ptr.add(3));
+                x = Self::muladd_512(x, y, lut);
+                y = _mm512_xor_si512(y, x);
 
-                (x0_lo, x0_hi, x1_lo, x1_hi) =
-                    Self::muladd_512(x0_lo, x0_hi, x1_lo, x1_hi, y0_lo, y0_hi, y1_lo, y1_hi, lut);
-
-                y0_lo = _mm256_xor_si256(y0_lo, x0_lo);
-                y0_hi = _mm256_xor_si256(y0_hi, x0_hi);
-                y1_lo = _mm256_xor_si256(y1_lo, x1_lo);
-                y1_hi = _mm256_xor_si256(y1_hi, x1_hi);
-
-                _mm256_storeu_si256(y_ptr, y0_lo);
-                _mm256_storeu_si256(y_ptr.add(1), y0_hi);
-                _mm256_storeu_si256(y_ptr.add(2), y1_lo);
-                _mm256_storeu_si256(y_ptr.add(3), y1_hi);
-
-                _mm256_storeu_si256(x_ptr, x0_lo);
-                _mm256_storeu_si256(x_ptr.add(1), x0_hi);
-                _mm256_storeu_si256(x_ptr.add(2), x1_lo);
-                _mm256_storeu_si256(x_ptr.add(3), x1_hi);
-            }
-        }
-
-        // 64 bytes left?
-        let x_chunk = TryInto::<&mut [u8; 64]>::try_into(x_chunks_iter.into_remainder());
-        let y_chunk = TryInto::<&mut [u8; 64]>::try_into(y_chunks_iter.into_remainder());
-        if let (Ok(x_chunk), Ok(y_chunk)) = (x_chunk, y_chunk) {
-            let x_ptr = x_chunk.as_mut_ptr() as *mut __m256i;
-            let y_ptr = y_chunk.as_mut_ptr() as *mut __m256i;
-
-            unsafe {
-                let mut x_lo = _mm256_loadu_si256(x_ptr);
-                let mut x_hi = _mm256_loadu_si256(x_ptr.add(1));
-
-                let mut y_lo = _mm256_loadu_si256(y_ptr);
-                let mut y_hi = _mm256_loadu_si256(y_ptr.add(1));
-
-                let zero = _mm256_setzero_si256();
-                (x_lo, x_hi, _, _) =
-                    Self::muladd_512(x_lo, x_hi, zero, zero, y_lo, y_hi, zero, zero, lut);
-
-                y_lo = _mm256_xor_si256(y_lo, x_lo);
-                y_hi = _mm256_xor_si256(y_hi, x_hi);
-
-                _mm256_storeu_si256(y_ptr, y_lo);
-                _mm256_storeu_si256(y_ptr.add(1), y_hi);
-
-                _mm256_storeu_si256(x_ptr, x_lo);
-                _mm256_storeu_si256(x_ptr.add(1), x_hi);
+                _mm512_storeu_si512(x_ptr, x);
+                _mm512_storeu_si512(y_ptr, y);
             }
         }
     }
@@ -427,69 +332,21 @@ impl Avx512 {
     fn ifft_butterfly_partial(&self, x: &mut [u8], y: &mut [u8], log_m: GfElement) {
         let lut = &self.mul128[log_m as usize];
 
-        let mut x_chunks_iter = x.chunks_exact_mut(128);
-        let mut y_chunks_iter = y.chunks_exact_mut(128);
+        let mut x_chunks_iter = x.chunks_exact_mut(64);
+        let mut y_chunks_iter = y.chunks_exact_mut(64);
         for (x_chunk, y_chunk) in zip(&mut x_chunks_iter, &mut y_chunks_iter) {
-            let x_ptr = x_chunk.as_mut_ptr() as *mut __m256i;
-            let y_ptr = y_chunk.as_mut_ptr() as *mut __m256i;
+            let x_ptr = x_chunk.as_mut_ptr() as *mut i32;
+            let y_ptr = y_chunk.as_mut_ptr() as *mut i32;
 
             unsafe {
-                let mut x0_lo = _mm256_loadu_si256(x_ptr);
-                let mut x0_hi = _mm256_loadu_si256(x_ptr.add(1));
-                let mut x1_lo = _mm256_loadu_si256(x_ptr.add(2));
-                let mut x1_hi = _mm256_loadu_si256(x_ptr.add(3));
+                let mut x = _mm512_loadu_si512(x_ptr);
+                let mut y = _mm512_loadu_si512(y_ptr);
 
-                let mut y0_lo = _mm256_loadu_si256(y_ptr);
-                let mut y0_hi = _mm256_loadu_si256(y_ptr.add(1));
-                let mut y1_lo = _mm256_loadu_si256(y_ptr.add(2));
-                let mut y1_hi = _mm256_loadu_si256(y_ptr.add(3));
+                y = _mm512_xor_si512(y, x);
+                x = Self::muladd_512(x, y, lut);
 
-                y0_lo = _mm256_xor_si256(y0_lo, x0_lo);
-                y0_hi = _mm256_xor_si256(y0_hi, x0_hi);
-                y1_lo = _mm256_xor_si256(y1_lo, x1_lo);
-                y1_hi = _mm256_xor_si256(y1_hi, x1_hi);
-
-                _mm256_storeu_si256(y_ptr, y0_lo);
-                _mm256_storeu_si256(y_ptr.add(1), y0_hi);
-                _mm256_storeu_si256(y_ptr.add(2), y1_lo);
-                _mm256_storeu_si256(y_ptr.add(3), y1_hi);
-
-                (x0_lo, x0_hi, x1_lo, x1_hi) =
-                    Self::muladd_512(x0_lo, x0_hi, x1_lo, x1_hi, y0_lo, y0_hi, y1_lo, y1_hi, lut);
-
-                _mm256_storeu_si256(x_ptr, x0_lo);
-                _mm256_storeu_si256(x_ptr.add(1), x0_hi);
-                _mm256_storeu_si256(x_ptr.add(2), x1_lo);
-                _mm256_storeu_si256(x_ptr.add(3), x1_hi);
-            }
-        }
-
-        // 64 bytes left?
-        let x_chunk = TryInto::<&mut [u8; 64]>::try_into(x_chunks_iter.into_remainder());
-        let y_chunk = TryInto::<&mut [u8; 64]>::try_into(y_chunks_iter.into_remainder());
-        if let (Ok(x_chunk), Ok(y_chunk)) = (x_chunk, y_chunk) {
-            let x_ptr = x_chunk.as_mut_ptr() as *mut __m256i;
-            let y_ptr = y_chunk.as_mut_ptr() as *mut __m256i;
-
-            unsafe {
-                let mut x_lo = _mm256_loadu_si256(x_ptr);
-                let mut x_hi = _mm256_loadu_si256(x_ptr.add(1));
-
-                let mut y_lo = _mm256_loadu_si256(y_ptr);
-                let mut y_hi = _mm256_loadu_si256(y_ptr.add(1));
-
-                y_lo = _mm256_xor_si256(y_lo, x_lo);
-                y_hi = _mm256_xor_si256(y_hi, x_hi);
-
-                _mm256_storeu_si256(y_ptr, y_lo);
-                _mm256_storeu_si256(y_ptr.add(1), y_hi);
-
-                let zero = _mm256_setzero_si256();
-                (x_lo, x_hi, _, _) =
-                    Self::muladd_512(x_lo, x_hi, zero, zero, y_lo, y_hi, zero, zero, lut);
-
-                _mm256_storeu_si256(x_ptr, x_lo);
-                _mm256_storeu_si256(x_ptr.add(1), x_hi);
+                _mm512_storeu_si512(x_ptr, x);
+                _mm512_storeu_si512(y_ptr, y);
             }
         }
     }
