@@ -42,6 +42,13 @@ impl Avx2 {
 }
 
 impl Engine for Avx2 {
+    #[inline(always)]
+    fn fft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
+        for (x_chunk, y_chunk) in zip(x.iter_mut(), y.iter_mut()) {
+            self.fftb_256(x_chunk, y_chunk, log_m);
+        }
+    }
+
     fn fft(
         &self,
         data: &mut ShardsRefMut,
@@ -211,14 +218,6 @@ impl Avx2 {
 
             _mm256_storeu_si256(y_ptr, y_lo);
             _mm256_storeu_si256(y_ptr.add(1), y_hi);
-        }
-    }
-
-    // Partial butterfly, caller must do `GF_MODULUS` check with `xor`.
-    #[inline(always)]
-    fn fft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
-        for (x_chunk, y_chunk) in zip(x.iter_mut(), y.iter_mut()) {
-            self.fftb_256(x_chunk, y_chunk, log_m);
         }
     }
 

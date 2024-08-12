@@ -34,9 +34,7 @@
 
 pub(crate) use self::shards::Shards;
 
-pub use self::{
-    engine_default::DefaultEngine, engine_naive::Naive, engine_nosimd::NoSimd, shards::ShardsRefMut,
-};
+pub use self::{engine_nosimd::NoSimd, shards::ShardsRefMut};
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub use self::{engine_avx2::Avx2, engine_ssse3::Ssse3};
@@ -44,9 +42,11 @@ pub use self::{engine_avx2::Avx2, engine_ssse3::Ssse3};
 #[cfg(target_arch = "aarch64")]
 pub use self::engine_neon::Neon;
 
-mod engine_default;
-mod engine_naive;
+//mod engine_default;
 mod engine_nosimd;
+
+///FIXME
+pub type DefaultEngine = NoSimd;
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod engine_avx2;
@@ -56,6 +56,7 @@ mod engine_ssse3;
 #[cfg(target_arch = "aarch64")]
 mod engine_neon;
 
+mod fft;
 mod fwht;
 mod shards;
 pub(crate) mod utils;
@@ -102,6 +103,9 @@ pub type GfElement = u16;
 pub trait Engine {
     // ============================================================
     // REQUIRED
+
+    /// TODO    
+    fn fft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement);
 
     /// In-place decimation-in-time FFT (fast Fourier transform).
     ///
