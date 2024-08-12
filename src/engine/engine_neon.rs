@@ -1,6 +1,6 @@
 use crate::engine::{
     tables::{self, Mul128, Multiply128lutT, Skew},
-    Engine, GfElement, ShardsRefMut, GF_MODULUS, GF_ORDER, utils,
+    utils, Engine, GfElement, ShardsRefMut, GF_MODULUS, GF_ORDER,
 };
 use std::arch::aarch64::*;
 use std::iter::zip;

@@ -58,16 +58,15 @@ pub(crate) fn xor(xs: &mut [[u8; 64]], ys: &[[u8; 64]]) {
 //) {
 //    self.fft(data, pos, size, truncated_size, pos + size)
 //}
-//
-///// Formal derivative.
-//fn formal_derivative(data: &mut ShardsRefMut)
-//{
-//    for i in 1..data.len() {
-//        let width: usize = ((i ^ (i - 1)) + 1) >> 1;
-//        Self::xor_within(data, i - width, i, width);
-//    }
-//}
-//
+
+/// Formal derivative.
+pub(crate) fn formal_derivative(data: &mut ShardsRefMut) {
+    for i in 1..data.len() {
+        let width: usize = 1 << i.trailing_zeros();
+        xor_within(data, i - width, i, width);
+    }
+}
+
 ///// IFFT with `skew_delta = pos + size`.
 //#[inline(always)]
 //fn ifft_skew_end(
@@ -84,7 +83,7 @@ pub(crate) fn xor(xs: &mut [[u8; 64]], ys: &[[u8; 64]]) {
 ///
 /// Ranges must not overlap.
 #[inline(always)]
-fn xor_within(data: &mut ShardsRefMut, x: usize, y: usize, count: usize) {
+pub(crate) fn xor_within(data: &mut ShardsRefMut, x: usize, y: usize, count: usize) {
     let (xs, ys) = data.flat2_mut(x, y, count);
     xor(xs, ys);
 }

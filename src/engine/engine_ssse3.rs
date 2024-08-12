@@ -464,7 +464,7 @@ impl Ssse3 {
         if dist < size {
             let log_m = self.skew[dist + skew_delta - 1];
             if log_m == GF_MODULUS {
-                Self::xor_within(data, pos + dist, pos, dist);
+                utils::xor_within(data, pos + dist, pos, dist);
             } else {
                 let (mut a, mut b) = data.split_at_mut(pos + dist);
                 for i in 0..dist {

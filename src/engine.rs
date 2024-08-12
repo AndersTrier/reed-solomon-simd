@@ -58,7 +58,7 @@ mod engine_neon;
 
 mod fwht;
 mod shards;
-mod utils;
+pub(crate) mod utils;
 
 pub mod tables;
 
@@ -169,17 +169,6 @@ pub trait Engine {
         self.fft(data, pos, size, truncated_size, pos + size)
     }
 
-    /// Formal derivative.
-    fn formal_derivative(data: &mut ShardsRefMut)
-    where
-        Self: Sized,
-    {
-        for i in 1..data.len() {
-            let width: usize = ((i ^ (i - 1)) + 1) >> 1;
-            Self::xor_within(data, i - width, i, width);
-        }
-    }
-
     /// IFFT with `skew_delta = pos + size`.
     #[inline(always)]
     fn ifft_skew_end(
@@ -190,18 +179,6 @@ pub trait Engine {
         truncated_size: usize,
     ) {
         self.ifft(data, pos, size, truncated_size, pos + size)
-    }
-
-    /// `data[x .. x + count] ^= data[y .. y + count]`
-    ///
-    /// Ranges must not overlap.
-    #[inline(always)]
-    fn xor_within(data: &mut ShardsRefMut, x: usize, y: usize, count: usize)
-    where
-        Self: Sized,
-    {
-        let (xs, ys) = data.flat2_mut(x, y, count);
-        utils::xor(xs, ys);
     }
 }
 

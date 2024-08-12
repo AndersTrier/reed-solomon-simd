@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::{
-    engine::{Engine, GF_MODULUS, GF_ORDER},
+    engine::{utils, Engine, GF_MODULUS, GF_ORDER},
     rate::{DecoderWork, EncoderWork, Rate, RateDecoder, RateEncoder},
     DecoderResult, EncoderResult, Error,
 };
@@ -59,7 +59,7 @@ impl<E: Engine> RateEncoder<E> for HighRateEncoder<E> {
             let mut chunk_start = chunk_size;
             while chunk_start + chunk_size <= original_count {
                 engine.ifft_skew_end(&mut work, chunk_start, chunk_size, chunk_size);
-                E::xor_within(&mut work, 0, chunk_start, chunk_size);
+                utils::xor_within(&mut work, 0, chunk_start, chunk_size);
                 chunk_start += chunk_size;
             }
 
@@ -69,7 +69,7 @@ impl<E: Engine> RateEncoder<E> for HighRateEncoder<E> {
             if last_count > 0 {
                 work.zero(chunk_start + last_count..);
                 engine.ifft_skew_end(&mut work, chunk_start, chunk_size, last_count);
-                E::xor_within(&mut work, 0, chunk_start, chunk_size);
+                utils::xor_within(&mut work, 0, chunk_start, chunk_size);
             }
         }
 
@@ -230,7 +230,7 @@ impl<E: Engine> RateDecoder<E> for HighRateDecoder<E> {
         // IFFT / FORMAL DERIVATIVE / FFT
 
         self.engine.ifft(&mut work, 0, work_count, original_end, 0);
-        E::formal_derivative(&mut work);
+        utils::formal_derivative(&mut work);
         self.engine.fft(&mut work, 0, work_count, original_end, 0);
 
         // REVEAL ERASURES

@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::{
-    engine::{Engine, GF_MODULUS, GF_ORDER},
+    engine::{utils, Engine, GF_MODULUS, GF_ORDER},
     rate::{DecoderWork, EncoderWork, Rate, RateDecoder, RateEncoder},
     DecoderResult, EncoderResult, Error,
 };
@@ -230,7 +230,7 @@ impl<E: Engine> RateDecoder<E> for LowRateDecoder<E> {
         // IFFT / FORMAL DERIVATIVE / FFT
 
         self.engine.ifft(&mut work, 0, work_count, recovery_end, 0);
-        E::formal_derivative(&mut work);
+        utils::formal_derivative(&mut work);
         self.engine.fft(&mut work, 0, work_count, recovery_end, 0);
 
         // REVEAL ERASURES
