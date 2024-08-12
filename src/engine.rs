@@ -228,7 +228,7 @@ pub trait Engine {
         Self: Sized,
     {
         for i in 1..data.len() {
-            let width: usize = ((i ^ (i - 1)) + 1) >> 1;
+            let width: usize = 1 << i.trailing_zeros();
             Self::xor_within(data, i - width, i, width);
         }
     }
