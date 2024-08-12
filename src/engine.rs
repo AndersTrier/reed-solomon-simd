@@ -105,51 +105,11 @@ pub trait Engine {
     // ============================================================
     // REQUIRED
 
-    /// TODO    
+    /// TODO
     fn fft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement);
 
     /// TODO
     fn ifft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement);
-
-    /// In-place decimation-in-time FFT (fast Fourier transform).
-    ///
-    /// - FFT is done on chunk `data[pos .. pos + size]`
-    /// - `size` must be `2^n`
-    /// - Before function call `data[pos .. pos + size]` must be valid.
-    /// - After function call
-    ///     - `data[pos .. pos + truncated_size]`
-    ///       contains valid FFT result.
-    ///     - `data[pos + truncated_size .. pos + size]`
-    ///       contains valid FFT result if this contained
-    ///       only `0u8`:s and garbage otherwise.
-    fn fft(
-        &self,
-        data: &mut ShardsRefMut,
-        pos: usize,
-        size: usize,
-        truncated_size: usize,
-        skew_delta: usize,
-    );
-
-    /// In-place decimation-in-time IFFT (inverse fast Fourier transform).
-    ///
-    /// - IFFT is done on chunk `data[pos .. pos + size]`
-    /// - `size` must be `2^n`
-    /// - Before function call `data[pos .. pos + size]` must be valid.
-    /// - After function call
-    ///     - `data[pos .. pos + truncated_size]`
-    ///       contains valid IFFT result.
-    ///     - `data[pos + truncated_size .. pos + size]`
-    ///       contains valid IFFT result if this contained
-    ///       only `0u8`:s and garbage otherwise.
-    fn ifft(
-        &self,
-        data: &mut ShardsRefMut,
-        pos: usize,
-        size: usize,
-        truncated_size: usize,
-        skew_delta: usize,
-    );
 
     /// `x[] *= log_m`
     fn mul(&self, x: &mut [[u8; 64]], log_m: GfElement);
@@ -163,30 +123,6 @@ pub trait Engine {
         Self: Sized,
     {
         utils::eval_poly_fallback(erasures, truncated_size)
-    }
-
-    /// FFT with `skew_delta = pos + size`.
-    #[inline(always)]
-    fn fft_skew_end(
-        &self,
-        data: &mut ShardsRefMut,
-        pos: usize,
-        size: usize,
-        truncated_size: usize,
-    ) {
-        self.fft(data, pos, size, truncated_size, pos + size)
-    }
-
-    /// IFFT with `skew_delta = pos + size`.
-    #[inline(always)]
-    fn ifft_skew_end(
-        &self,
-        data: &mut ShardsRefMut,
-        pos: usize,
-        size: usize,
-        truncated_size: usize,
-    ) {
-        self.ifft(data, pos, size, truncated_size, pos + size)
     }
 }
 

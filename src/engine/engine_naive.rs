@@ -1,6 +1,6 @@
 use crate::engine::{
-    tables::{self, Exp, Log, Skew},
-    utils, Engine, GfElement, ShardsRefMut, GF_MODULUS,
+    tables::{self, Exp, Log},
+    utils, Engine, GfElement,
 };
 
 // ======================================================================
@@ -16,7 +16,6 @@ use crate::engine::{
 pub struct Naive {
     exp: &'static Exp,
     log: &'static Log,
-    skew: &'static Skew,
 }
 
 impl Naive {
@@ -29,9 +28,8 @@ impl Naive {
     /// [`LogWalsh`]: crate::engine::tables::LogWalsh
     pub fn new() -> Self {
         let (exp, log) = tables::initialize_exp_log();
-        let skew = tables::initialize_skew();
 
-        Self { exp, log, skew }
+        Self { exp, log }
     }
 }
 
@@ -44,70 +42,6 @@ impl Engine for Naive {
     fn ifft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
         utils::xor(y, x);
         self.mul_add(x, y, log_m);
-    }
-
-    fn fft(
-        &self,
-        data: &mut ShardsRefMut,
-        pos: usize,
-        size: usize,
-        truncated_size: usize,
-        skew_delta: usize,
-    ) {
-        debug_assert!(size.is_power_of_two());
-        debug_assert!(truncated_size <= size);
-
-        let mut dist = size / 2;
-        while dist > 0 {
-            let mut r = 0;
-            while r < truncated_size {
-                let log_m = self.skew[r + dist + skew_delta - 1];
-                for i in r..r + dist {
-                    let (a, b) = data.dist2_mut(pos + i, dist);
-
-                    // FFT BUTTERFLY
-
-                    if log_m != GF_MODULUS {
-                        self.mul_add(a, b, log_m);
-                    }
-                    utils::xor(b, a);
-                }
-                r += dist * 2;
-            }
-            dist /= 2;
-        }
-    }
-
-    fn ifft(
-        &self,
-        data: &mut ShardsRefMut,
-        pos: usize,
-        size: usize,
-        truncated_size: usize,
-        skew_delta: usize,
-    ) {
-        debug_assert!(size.is_power_of_two());
-        debug_assert!(truncated_size <= size);
-
-        let mut dist = 1;
-        while dist < size {
-            let mut r = 0;
-            while r < truncated_size {
-                let log_m = self.skew[r + dist + skew_delta - 1];
-                for i in r..r + dist {
-                    let (a, b) = data.dist2_mut(pos + i, dist);
-
-                    // IFFT BUTTERFLY
-
-                    utils::xor(b, a);
-                    if log_m != GF_MODULUS {
-                        self.mul_add(a, b, log_m);
-                    }
-                }
-                r += dist * 2;
-            }
-            dist *= 2;
-        }
     }
 
     fn mul(&self, x: &mut [[u8; 64]], log_m: GfElement) {

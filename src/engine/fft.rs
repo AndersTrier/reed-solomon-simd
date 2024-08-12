@@ -4,7 +4,17 @@ impl<'a> ShardsRefMut<'a> {
     // ======================================================================
     // FFT (fast Fourier transform)
 
-    /// TODO
+    /// In-place decimation-in-time FFT (fast Fourier transform).
+    ///
+    /// - FFT is done on chunk `data[pos .. pos + size]`
+    /// - `size` must be `2^n`
+    /// - Before function call `data[pos .. pos + size]` must be valid.
+    /// - After function call
+    ///     - `data[pos .. pos + truncated_size]`
+    ///       contains valid FFT result.
+    ///     - `data[pos + truncated_size .. pos + size]`
+    ///       contains valid FFT result if this contained
+    ///       only `0u8`:s and garbage otherwise.
     #[inline(always)]
     pub(crate) fn fft(
         &mut self,
@@ -111,7 +121,17 @@ impl<'a> ShardsRefMut<'a> {
     // ======================================================================
     // IFFT (inverse fast Fourier transform)
 
-    /// TODO
+    /// In-place decimation-in-time IFFT (inverse fast Fourier transform).
+    ///
+    /// - IFFT is done on chunk `data[pos .. pos + size]`
+    /// - `size` must be `2^n`
+    /// - Before function call `data[pos .. pos + size]` must be valid.
+    /// - After function call
+    ///     - `data[pos .. pos + truncated_size]`
+    ///       contains valid IFFT result.
+    ///     - `data[pos + truncated_size .. pos + size]`
+    ///       contains valid IFFT result if this contained
+    ///       only `0u8`:s and garbage otherwise.
     #[inline(always)]
     pub(crate) fn ifft(
         &mut self,
