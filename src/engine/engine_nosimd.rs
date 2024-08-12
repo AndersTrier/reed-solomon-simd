@@ -109,6 +109,55 @@ impl NoSimd {
             }
         }
     }
+
+    #[inline(always)]
+    fn mul_add_alt(&self, mut x: [u8; 64], y: [u8; 64], log_m: GfElement) -> [u8; 64] {
+        let lut = &self.mul16[log_m as usize];
+
+        let (x_lo, x_hi) = x.split_at_mut(32);
+        let (y_lo, y_hi) = y.split_at(32);
+
+        for i in 0..32 {
+            let lo = y_lo[i];
+            let hi = y_hi[i];
+            let prod = lut[0][usize::from(lo & 15)]
+                ^ lut[1][usize::from(lo >> 4)]
+                ^ lut[2][usize::from(hi & 15)]
+                ^ lut[3][usize::from(hi >> 4)];
+            x_lo[i] ^= prod as u8;
+            x_hi[i] ^= (prod >> 8) as u8;
+        }
+
+        x
+    }
+
+    #[inline(always)]
+    fn mul_alt(&self, mut x: [u8; 64], log_m: GfElement) -> [u8; 64] {
+        let lut = &self.mul16[log_m as usize];
+
+        let (x_lo, x_hi) = x.split_at_mut(32);
+
+        for i in 0..32 {
+            let lo = x_lo[i];
+            let hi = x_hi[i];
+            let prod = lut[0][usize::from(lo & 15)]
+                ^ lut[1][usize::from(lo >> 4)]
+                ^ lut[2][usize::from(hi & 15)]
+                ^ lut[3][usize::from(hi >> 4)];
+            x_lo[i] = prod as u8;
+            x_hi[i] = (prod >> 8) as u8;
+        }
+
+        x
+    }
+
+    #[inline(always)]
+    fn xor_alt(mut x: [u8; 64], y: [u8; 64]) -> [u8; 64] {
+        for (x, y) in std::iter::zip(x.iter_mut(), y.iter()) {
+            *x ^= y;
+        }
+        x
+    }
 }
 
 // ======================================================================
@@ -118,8 +167,10 @@ impl NoSimd {
     // Partial butterfly, caller must do `GF_MODULUS` check with `xor`.
     #[inline(always)]
     fn fft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
-        self.mul_add(x, y, log_m);
-        Self::xor(y, x);
+        for (x_chunk, y_chunk) in std::iter::zip(x.iter_mut(), y.iter_mut()) {
+            *x_chunk = self.mul_add_alt(*x_chunk, *y_chunk, log_m);
+            *y_chunk = Self::xor_alt(*y_chunk, *x_chunk);
+        }
     }
 
     #[inline(always)]
@@ -219,8 +270,10 @@ impl NoSimd {
     // Partial butterfly, caller must do `GF_MODULUS` check with `xor`.
     #[inline(always)]
     fn ifft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
-        Self::xor(y, x);
-        self.mul_add(x, y, log_m);
+        for (y_chunk, x_chunk) in std::iter::zip(y.iter_mut(), x.iter_mut()) {
+            *y_chunk = Self::xor_alt(*y_chunk, *x_chunk);
+            *x_chunk = self.mul_add_alt(*x_chunk, *y_chunk, log_m);
+        }
     }
 
     #[inline(always)]
