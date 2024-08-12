@@ -49,6 +49,13 @@ impl Engine for Ssse3 {
         }
     }
 
+    #[inline(always)]
+    fn ifft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
+        for (x_chunk, y_chunk) in zip(x.iter_mut(), y.iter_mut()) {
+            self.ifftb_128(x_chunk, y_chunk, log_m);
+        }
+    }
+
     fn fft(
         &self,
         data: &mut ShardsRefMut,
@@ -366,13 +373,6 @@ impl Ssse3 {
             _mm_storeu_si128(x_ptr.add(1), x1_lo);
             _mm_storeu_si128(x_ptr.add(2), x0_hi);
             _mm_storeu_si128(x_ptr.add(3), x1_hi);
-        }
-    }
-
-    #[inline(always)]
-    fn ifft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
-        for (x_chunk, y_chunk) in zip(x.iter_mut(), y.iter_mut()) {
-            self.ifftb_128(x_chunk, y_chunk, log_m);
         }
     }
 

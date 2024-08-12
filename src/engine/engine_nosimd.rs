@@ -40,6 +40,12 @@ impl Engine for NoSimd {
         utils::xor(y, x);
     }
 
+    #[inline(always)]
+    fn ifft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
+        utils::xor(y, x);
+        self.mul_add(x, y, log_m);
+    }
+
     fn fft(
         &self,
         data: &mut ShardsRefMut,
@@ -215,13 +221,6 @@ impl NoSimd {
 // NoSimd - PRIVATE - IFFT (inverse fast Fourier transform)
 
 impl NoSimd {
-    // Partial butterfly, caller must do `GF_MODULUS` check with `xor`.
-    #[inline(always)]
-    fn ifft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
-        utils::xor(y, x);
-        self.mul_add(x, y, log_m);
-    }
-
     #[inline(always)]
     fn ifft_butterfly_two_layers(
         &self,
