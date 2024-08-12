@@ -6,9 +6,8 @@ use std::arch::x86::*;
 use std::arch::x86_64::*;
 
 use crate::engine::{
-    self,
     tables::{self, Mul128, Multiply128lutT, Skew},
-    Engine, GfElement, ShardsRefMut, GF_MODULUS, GF_ORDER,
+    utils, Engine, GfElement, ShardsRefMut, GF_MODULUS, GF_ORDER,
 };
 
 // ======================================================================
@@ -238,8 +237,10 @@ impl Ssse3 {
         // FIRST LAYER
 
         if log_m02 == GF_MODULUS {
-            Self::xor(s2, s0);
-            Self::xor(s3, s1);
+            //            utils::xor(s2, s0);
+            //            utils::xor(s3, s1);
+            utils::xor(s2, s0);
+            utils::xor(s3, s1);
         } else {
             self.fft_butterfly_partial(s0, s2, log_m02);
             self.fft_butterfly_partial(s1, s3, log_m02);
@@ -248,13 +249,13 @@ impl Ssse3 {
         // SECOND LAYER
 
         if log_m01 == GF_MODULUS {
-            Self::xor(s1, s0);
+            utils::xor(s1, s0);
         } else {
             self.fft_butterfly_partial(s0, s1, log_m01);
         }
 
         if log_m23 == GF_MODULUS {
-            Self::xor(s3, s2);
+            utils::xor(s3, s2);
         } else {
             self.fft_butterfly_partial(s2, s3, log_m23);
         }
@@ -315,7 +316,8 @@ impl Ssse3 {
                 let (x, y) = data.dist2_mut(pos + r, 1);
 
                 if log_m == GF_MODULUS {
-                    Self::xor(y, x);
+                    //utils::xor(y, x);
+                    utils::xor(y, x);
                 } else {
                     self.fft_butterfly_partial(x, y, log_m)
                 }
@@ -390,13 +392,13 @@ impl Ssse3 {
         // FIRST LAYER
 
         if log_m01 == GF_MODULUS {
-            Self::xor(s1, s0);
+            utils::xor(s1, s0);
         } else {
             self.ifft_butterfly_partial(s0, s1, log_m01);
         }
 
         if log_m23 == GF_MODULUS {
-            Self::xor(s3, s2);
+            utils::xor(s3, s2);
         } else {
             self.ifft_butterfly_partial(s2, s3, log_m23);
         }
@@ -404,8 +406,8 @@ impl Ssse3 {
         // SECOND LAYER
 
         if log_m02 == GF_MODULUS {
-            Self::xor(s2, s0);
-            Self::xor(s3, s1);
+            utils::xor(s2, s0);
+            utils::xor(s3, s1);
         } else {
             self.ifft_butterfly_partial(s0, s2, log_m02);
             self.ifft_butterfly_partial(s1, s3, log_m02);
@@ -483,7 +485,7 @@ impl Ssse3 {
 impl Ssse3 {
     #[target_feature(enable = "ssse3")]
     unsafe fn eval_poly_ssse3(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        engine::eval_poly(erasures, truncated_size)
+        utils::eval_poly(erasures, truncated_size)
     }
 }
 

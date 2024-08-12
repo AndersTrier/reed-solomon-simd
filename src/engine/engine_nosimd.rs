@@ -2,7 +2,7 @@ use std::iter::zip;
 
 use crate::engine::{
     tables::{self, Mul16, Skew},
-    Engine, GfElement, ShardsRefMut, GF_MODULUS,
+    utils, Engine, GfElement, ShardsRefMut, GF_MODULUS,
 };
 
 // ======================================================================
@@ -119,7 +119,7 @@ impl NoSimd {
     #[inline(always)]
     fn fft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
         self.mul_add(x, y, log_m);
-        Self::xor(y, x);
+        utils::xor(y, x);
     }
 
     #[inline(always)]
@@ -137,8 +137,8 @@ impl NoSimd {
         // FIRST LAYER
 
         if log_m02 == GF_MODULUS {
-            Self::xor(s2, s0);
-            Self::xor(s3, s1);
+            utils::xor(s2, s0);
+            utils::xor(s3, s1);
         } else {
             self.fft_butterfly_partial(s0, s2, log_m02);
             self.fft_butterfly_partial(s1, s3, log_m02);
@@ -147,13 +147,13 @@ impl NoSimd {
         // SECOND LAYER
 
         if log_m01 == GF_MODULUS {
-            Self::xor(s1, s0);
+            utils::xor(s1, s0);
         } else {
             self.fft_butterfly_partial(s0, s1, log_m01);
         }
 
         if log_m23 == GF_MODULUS {
-            Self::xor(s3, s2);
+            utils::xor(s3, s2);
         } else {
             self.fft_butterfly_partial(s2, s3, log_m23);
         }
@@ -201,7 +201,7 @@ impl NoSimd {
                 let (x, y) = data.dist2_mut(pos + r, 1);
 
                 if log_m == GF_MODULUS {
-                    Self::xor(y, x);
+                    utils::xor(y, x);
                 } else {
                     self.fft_butterfly_partial(x, y, log_m)
                 }
@@ -219,7 +219,7 @@ impl NoSimd {
     // Partial butterfly, caller must do `GF_MODULUS` check with `xor`.
     #[inline(always)]
     fn ifft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
-        Self::xor(y, x);
+        utils::xor(y, x);
         self.mul_add(x, y, log_m);
     }
 
@@ -238,13 +238,13 @@ impl NoSimd {
         // FIRST LAYER
 
         if log_m01 == GF_MODULUS {
-            Self::xor(s1, s0);
+            utils::xor(s1, s0);
         } else {
             self.ifft_butterfly_partial(s0, s1, log_m01);
         }
 
         if log_m23 == GF_MODULUS {
-            Self::xor(s3, s2);
+            utils::xor(s3, s2);
         } else {
             self.ifft_butterfly_partial(s2, s3, log_m23);
         }
@@ -252,8 +252,8 @@ impl NoSimd {
         // SECOND LAYER
 
         if log_m02 == GF_MODULUS {
-            Self::xor(s2, s0);
-            Self::xor(s3, s1);
+            utils::xor(s2, s0);
+            utils::xor(s3, s1);
         } else {
             self.ifft_butterfly_partial(s0, s2, log_m02);
             self.ifft_butterfly_partial(s1, s3, log_m02);
