@@ -1,5 +1,7 @@
 use std::ops::{Bound, Index, IndexMut, RangeBounds};
 
+use crate::engine::utils;
+
 // ======================================================================
 // Shards - CRATE
 
@@ -244,5 +246,22 @@ impl<'a> ShardsRefMut<'a> {
             let (head, tail) = self.data.split_at_mut(x);
             (&mut tail[..count], &mut head[y..y + count])
         }
+    }
+
+    /// Formal derivative.
+    pub(crate) fn formal_derivative(&mut self) {
+        for i in 1..self.len() {
+            let width: usize = 1 << i.trailing_zeros();
+            self.xor_within(i - width, i, width);
+        }
+    }
+
+    /// `data[x .. x + count] ^= data[y .. y + count]`
+    ///
+    /// Ranges must not overlap.
+    #[inline(always)]
+    pub(crate) fn xor_within(&mut self, x: usize, y: usize, count: usize) {
+        let (xs, ys) = self.flat2_mut(x, y, count);
+        utils::xor(xs, ys);
     }
 }

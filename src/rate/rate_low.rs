@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::{
-    engine::{utils, Engine, GF_MODULUS, GF_ORDER},
+    engine::{Engine, GF_MODULUS, GF_ORDER},
     rate::{DecoderWork, EncoderWork, Rate, RateDecoder, RateEncoder},
     DecoderResult, EncoderResult, Error,
 };
@@ -52,7 +52,7 @@ impl<E: Engine> RateEncoder<E> for LowRateEncoder<E> {
 
         // IFFT - ORIGINAL
 
-        engine.ifft(&mut work, 0, chunk_size, original_count, 0);
+        work.ifft(engine, 0, chunk_size, original_count, 0);
 
         // COPY IFFT RESULT TO OTHER CHUNKS
 
@@ -66,7 +66,7 @@ impl<E: Engine> RateEncoder<E> for LowRateEncoder<E> {
 
         let mut chunk_start = 0;
         while chunk_start + chunk_size <= recovery_count {
-            engine.fft_skew_end(&mut work, chunk_start, chunk_size, chunk_size);
+            work.fft_skew_end(engine, chunk_start, chunk_size, chunk_size);
             chunk_start += chunk_size;
         }
 
@@ -74,7 +74,7 @@ impl<E: Engine> RateEncoder<E> for LowRateEncoder<E> {
 
         let last_count = recovery_count % chunk_size;
         if last_count > 0 {
-            engine.fft_skew_end(&mut work, chunk_start, chunk_size, last_count);
+            work.fft_skew_end(engine, chunk_start, chunk_size, last_count);
         }
 
         // DONE
@@ -229,9 +229,9 @@ impl<E: Engine> RateDecoder<E> for LowRateDecoder<E> {
 
         // IFFT / FORMAL DERIVATIVE / FFT
 
-        self.engine.ifft(&mut work, 0, work_count, recovery_end, 0);
-        utils::formal_derivative(&mut work);
-        self.engine.fft(&mut work, 0, work_count, recovery_end, 0);
+        work.ifft(&self.engine, 0, work_count, recovery_end, 0);
+        work.formal_derivative();
+        work.fft(&self.engine, 0, work_count, recovery_end, 0);
 
         // REVEAL ERASURES
 

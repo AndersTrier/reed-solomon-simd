@@ -449,7 +449,7 @@ impl Avx2 {
         if dist < size {
             let log_m = self.skew[dist + skew_delta - 1];
             if log_m == GF_MODULUS {
-                utils::xor_within(data, pos + dist, pos, dist);
+                data.xor_within(pos + dist, pos, dist);
             } else {
                 let (mut a, mut b) = data.split_at_mut(pos + dist);
                 for i in 0..dist {
@@ -470,7 +470,7 @@ impl Avx2 {
 impl Avx2 {
     #[target_feature(enable = "avx2")]
     unsafe fn eval_poly_avx2(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        utils::eval_poly(erasures, truncated_size)
+        utils::eval_poly_fallback(erasures, truncated_size)
     }
 }
 

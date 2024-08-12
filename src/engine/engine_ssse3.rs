@@ -463,7 +463,7 @@ impl Ssse3 {
         if dist < size {
             let log_m = self.skew[dist + skew_delta - 1];
             if log_m == GF_MODULUS {
-                utils::xor_within(data, pos + dist, pos, dist);
+                data.xor_within(pos + dist, pos, dist);
             } else {
                 let (mut a, mut b) = data.split_at_mut(pos + dist);
                 for i in 0..dist {
@@ -484,7 +484,7 @@ impl Ssse3 {
 impl Ssse3 {
     #[target_feature(enable = "ssse3")]
     unsafe fn eval_poly_ssse3(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        utils::eval_poly(erasures, truncated_size)
+        utils::eval_poly_fallback(erasures, truncated_size)
     }
 }
 

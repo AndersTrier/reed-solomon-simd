@@ -34,7 +34,7 @@
 
 pub(crate) use self::shards::Shards;
 
-pub use self::{engine_nosimd::NoSimd, shards::ShardsRefMut};
+pub use self::{engine_naive::Naive, engine_nosimd::NoSimd, shards::ShardsRefMut};
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub use self::{engine_avx2::Avx2, engine_ssse3::Ssse3};
@@ -43,6 +43,7 @@ pub use self::{engine_avx2::Avx2, engine_ssse3::Ssse3};
 pub use self::engine_neon::Neon;
 
 //mod engine_default;
+mod engine_naive;
 mod engine_nosimd;
 
 ///FIXME
@@ -161,7 +162,7 @@ pub trait Engine {
     where
         Self: Sized,
     {
-        utils::eval_poly(erasures, truncated_size)
+        utils::eval_poly_fallback(erasures, truncated_size)
     }
 
     /// FFT with `skew_delta = pos + size`.

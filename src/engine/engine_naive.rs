@@ -36,6 +36,16 @@ impl Naive {
 }
 
 impl Engine for Naive {
+    fn fft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
+        self.mul_add(x, y, log_m);
+        utils::xor(y, x);
+    }
+
+    fn ifft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
+        utils::xor(y, x);
+        self.mul_add(x, y, log_m);
+    }
+
     fn fft(
         &self,
         data: &mut ShardsRefMut,

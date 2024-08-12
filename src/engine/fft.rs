@@ -6,7 +6,7 @@ impl<'a> ShardsRefMut<'a> {
 
     /// TODO
     #[inline(always)]
-    pub fn fft(
+    pub(crate) fn fft(
         &mut self,
         engine: &impl Engine,
         pos: usize,
@@ -96,12 +96,24 @@ impl<'a> ShardsRefMut<'a> {
         }
     }
 
+    /// FFT with `skew_delta = pos + size`.
+    #[inline(always)]
+    pub(crate) fn fft_skew_end(
+        &mut self,
+        engine: &impl Engine,
+        pos: usize,
+        size: usize,
+        truncated_size: usize,
+    ) {
+        self.fft(engine, pos, size, truncated_size, pos + size)
+    }
+
     // ======================================================================
     // IFFT (inverse fast Fourier transform)
 
     /// TODO
     #[inline(always)]
-    pub fn ifft(
+    pub(crate) fn ifft(
         &mut self,
         engine: &impl Engine,
         pos: usize,
@@ -139,7 +151,7 @@ impl<'a> ShardsRefMut<'a> {
         if dist < size {
             let log_m = skew[dist + skew_delta - 1];
             if log_m == GF_MODULUS {
-                utils::xor_within(self, pos + dist, pos, dist);
+                self.xor_within(pos + dist, pos, dist);
             } else {
                 let (mut a, mut b) = self.split_at_mut(pos + dist);
                 for i in 0..dist {
@@ -188,6 +200,18 @@ impl<'a> ShardsRefMut<'a> {
             engine.ifft_butterfly_partial(s0, s2, log_m02);
             engine.ifft_butterfly_partial(s1, s3, log_m02);
         }
+    }
+
+    /// IFFT with `skew_delta = pos + size`.
+    #[inline(always)]
+    pub(crate) fn ifft_skew_end(
+        &mut self,
+        engine: &impl Engine,
+        pos: usize,
+        size: usize,
+        truncated_size: usize,
+    ) {
+        self.ifft(engine, pos, size, truncated_size, pos + size)
     }
 }
 
