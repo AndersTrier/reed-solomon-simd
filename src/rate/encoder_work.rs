@@ -62,9 +62,7 @@ impl EncoderWork {
                 got: original_shard.len(),
             })
         } else {
-            self.shards[self.original_received_count]
-                .as_flattened_mut()
-                .copy_from_slice(original_shard);
+            self.shards.push(original_shard);
             self.original_received_count += 1;
             Ok(())
         }
@@ -77,6 +75,7 @@ impl EncoderWork {
                 original_received_count: self.original_received_count,
             })
         } else {
+            self.shards.clear_recovery();
             Ok((
                 self.shards.as_ref_mut(),
                 self.original_count,
