@@ -30,7 +30,32 @@ impl Shards {
         self.shard_count = shard_count;
         self.shard_bytes = shard_bytes;
 
-        self.data.resize(shard_count * (shard_bytes / 64), [0; 64]);
+        self.data.clear();
+        self.data.reserve(shard_count * (shard_bytes / 64));
+    }
+
+    pub(crate) fn zero_alloc(&mut self, shard_count: usize, shard_bytes: usize) {
+        assert!(shard_bytes > 0 && shard_bytes & 63 == 0);
+
+        self.shard_count = shard_count;
+        self.shard_bytes = shard_bytes;
+        self.data.resize(self.shard_count * (self.shard_bytes / 64), [0; 64]);
+    }
+
+    pub(crate) fn push(&mut self, shard: &[u8]) {
+        assert_eq!(shard.len(), self.shard_bytes);
+        assert!(shard.len() > 0 && shard.len() & 63 == 0);
+
+        for chunk in shard.chunks_exact(64) {
+            match chunk.try_into() {
+                Ok(c) => self.data.push(c),
+                _ => unreachable!()
+            }
+        }
+    }
+
+    pub(crate) fn clear_recovery(&mut self) {
+        self.data.resize(self.shard_count * (self.shard_bytes / 64), [0; 64]);
     }
 }
 

@@ -176,7 +176,7 @@ impl DecoderWork {
             self.received.grow(max_received_pos);
         }
 
-        self.shards.resize(work_count, shard_bytes);
+        self.shards.zero_alloc(work_count, shard_bytes);
     }
 
     pub(crate) fn reset_received(&mut self) {
