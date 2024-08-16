@@ -323,11 +323,12 @@ fn benchmarks_engine(c: &mut Criterion) {
 
 fn benchmarks_engine_one<E: Engine>(c: &mut Criterion, name: &str, engine: E) {
     let mut group = c.benchmark_group(name);
+    let shard_len_64 = SHARD_BYTES / 64;
 
     // XOR MUL
 
-    let mut x = &mut generate_shards_64(1, SHARD_BYTES, 0)[0];
-    let y = &generate_shards_64(1, SHARD_BYTES, 1)[0];
+    let mut x = &mut generate_shards_64(1, shard_len_64, 0)[0];
+    let y = &generate_shards_64(1, shard_len_64, 1)[0];
 
     group.bench_function("xor", |b| {
         b.iter(|| E::xor(black_box(&mut x), black_box(&y)))
@@ -339,8 +340,8 @@ fn benchmarks_engine_one<E: Engine>(c: &mut Criterion, name: &str, engine: E) {
 
     // XOR_WITHIN
 
-    let shards_256_data = &mut generate_shards_64(1, 256 * SHARD_BYTES, 0)[0];
-    let mut shards_256 = ShardsRefMut::new(256, SHARD_BYTES, shards_256_data.as_mut());
+    let shards_256_data = &mut generate_shards_64(1, 256 * shard_len_64, 0)[0];
+    let mut shards_256 = ShardsRefMut::new(256, shard_len_64, shards_256_data.as_mut());
 
     group.bench_function("xor_within 128*2", |b| {
         b.iter(|| {
@@ -355,8 +356,8 @@ fn benchmarks_engine_one<E: Engine>(c: &mut Criterion, name: &str, engine: E) {
 
     // FORMAL DERIVATIVE
 
-    let shards_128_data = &mut generate_shards_64(1, 128 * SHARD_BYTES, 0)[0];
-    let mut shards_128 = ShardsRefMut::new(128, SHARD_BYTES, shards_128_data.as_mut());
+    let shards_128_data = &mut generate_shards_64(1, 128 * shard_len_64, 0)[0];
+    let mut shards_128 = ShardsRefMut::new(128, shard_len_64, shards_128_data.as_mut());
 
     group.bench_function("formal_derivative 128", |b| {
         b.iter(|| E::formal_derivative(black_box(&mut shards_128)))
