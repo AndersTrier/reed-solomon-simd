@@ -3,7 +3,7 @@ use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 
 use reed_solomon_simd::{
-    engine::{DefaultEngine, Engine, Naive, NoSimd, ShardsRefMut},
+    engine::{DefaultEngine, Engine, Naive, NoSimd, ShardsRefMut, GF_ORDER},
     rate::{
         HighRateDecoder, HighRateEncoder, LowRateDecoder, LowRateEncoder, RateDecoder, RateEncoder,
     },
@@ -324,6 +324,19 @@ fn benchmarks_engine(c: &mut Criterion) {
 fn benchmarks_engine_one<E: Engine>(c: &mut Criterion, name: &str, engine: E) {
     let mut group = c.benchmark_group(name);
     let shard_len_64 = SHARD_BYTES / 64;
+
+    // EVAL_POLY
+
+    let mut rng = ChaCha8Rng::from_seed([0; 32]);
+    let mut data = [(); GF_ORDER].map(|_| rng.gen());
+
+    group.bench_function("eval_poly", |b| {
+        b.iter(|| E::eval_poly(black_box(&mut data), GF_ORDER))
+    });
+
+    group.bench_function("eval_poly truncated", |b| {
+        b.iter(|| E::eval_poly(black_box(&mut data), GF_ORDER / 8))
+    });
 
     // XOR MUL
 
