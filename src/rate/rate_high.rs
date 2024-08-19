@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::{
-    engine::{Engine, GF_MODULUS, GF_ORDER},
+    engine::{self, Engine, GF_MODULUS, GF_ORDER},
     rate::{DecoderWork, EncoderWork, Rate, RateDecoder, RateEncoder},
     DecoderResult, EncoderResult, Error,
 };
@@ -51,15 +51,15 @@ impl<E: Engine> RateEncoder<E> for HighRateEncoder<E> {
         let first_count = std::cmp::min(original_count, chunk_size);
 
         work.zero(first_count..chunk_size);
-        engine.ifft_skew_end(&mut work, 0, chunk_size, first_count);
+        engine::ifft_skew_end(engine, &mut work, 0, chunk_size, first_count);
 
         if original_count > chunk_size {
             // FULL CHUNKS
 
             let mut chunk_start = chunk_size;
             while chunk_start + chunk_size <= original_count {
-                engine.ifft_skew_end(&mut work, chunk_start, chunk_size, chunk_size);
-                E::xor_within(&mut work, 0, chunk_start, chunk_size);
+                engine::ifft_skew_end(engine, &mut work, chunk_start, chunk_size, chunk_size);
+                engine::xor_within(&mut work, 0, chunk_start, chunk_size);
                 chunk_start += chunk_size;
             }
 
@@ -68,8 +68,8 @@ impl<E: Engine> RateEncoder<E> for HighRateEncoder<E> {
             let last_count = original_count % chunk_size;
             if last_count > 0 {
                 work.zero(chunk_start + last_count..);
-                engine.ifft_skew_end(&mut work, chunk_start, chunk_size, last_count);
-                E::xor_within(&mut work, 0, chunk_start, chunk_size);
+                engine::ifft_skew_end(engine, &mut work, chunk_start, chunk_size, last_count);
+                engine::xor_within(&mut work, 0, chunk_start, chunk_size);
             }
         }
 
@@ -230,7 +230,7 @@ impl<E: Engine> RateDecoder<E> for HighRateDecoder<E> {
         // IFFT / FORMAL DERIVATIVE / FFT
 
         self.engine.ifft(&mut work, 0, work_count, original_end, 0);
-        E::formal_derivative(&mut work);
+        engine::formal_derivative(&mut work);
         self.engine.fft(&mut work, 0, work_count, original_end, 0);
 
         // REVEAL ERASURES

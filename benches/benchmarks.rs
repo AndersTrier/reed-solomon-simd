@@ -338,45 +338,18 @@ fn benchmarks_engine_one<E: Engine>(c: &mut Criterion, name: &str, engine: E) {
         b.iter(|| E::eval_poly(black_box(&mut data), GF_ORDER / 8))
     });
 
-    // XOR MUL
+    // MUL
 
     let mut x = &mut generate_shards_64(1, shard_len_64, 0)[0];
-    let y = &generate_shards_64(1, shard_len_64, 1)[0];
-
-    group.bench_function("xor", |b| {
-        b.iter(|| E::xor(black_box(&mut x), black_box(&y)))
-    });
 
     group.bench_function("mul", |b| {
         b.iter(|| engine.mul(black_box(&mut x), black_box(12345)))
     });
 
-    // XOR_WITHIN
-
-    let shards_256_data = &mut generate_shards_64(1, 256 * shard_len_64, 0)[0];
-    let mut shards_256 = ShardsRefMut::new(256, shard_len_64, shards_256_data.as_mut());
-
-    group.bench_function("xor_within 128*2", |b| {
-        b.iter(|| {
-            E::xor_within(
-                black_box(&mut shards_256),
-                black_box(0),
-                black_box(128),
-                black_box(128),
-            )
-        })
-    });
-
-    // FORMAL DERIVATIVE
+    // FFT IFFT
 
     let shards_128_data = &mut generate_shards_64(1, 128 * shard_len_64, 0)[0];
     let mut shards_128 = ShardsRefMut::new(128, shard_len_64, shards_128_data.as_mut());
-
-    group.bench_function("formal_derivative 128", |b| {
-        b.iter(|| E::formal_derivative(black_box(&mut shards_128)))
-    });
-
-    // FFT IFFT
 
     group.bench_function("FFT 128", |b| {
         b.iter(|| {
