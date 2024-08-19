@@ -26,8 +26,8 @@ impl NoSimd {
     ///
     /// [`LogWalsh`]: crate::engine::tables::LogWalsh
     pub fn new() -> Self {
-        let mul16 = tables::initialize_mul16();
-        let skew = tables::initialize_skew();
+        let mul16 = &*tables::MUL16;
+        let skew = &*tables::SKEW;
 
         Self { mul16, skew }
     }
