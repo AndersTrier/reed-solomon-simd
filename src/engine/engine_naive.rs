@@ -1,6 +1,6 @@
 use crate::engine::{
     tables::{self, Exp, Log, Skew},
-    Engine, GfElement, ShardsRefMut, GF_MODULUS,
+    utils, Engine, GfElement, ShardsRefMut, GF_MODULUS,
 };
 
 // ======================================================================
@@ -60,7 +60,7 @@ impl Engine for Naive {
                     if log_m != GF_MODULUS {
                         self.mul_add(a, b, log_m);
                     }
-                    Self::xor(b, a);
+                    utils::xor(b, a);
                 }
                 r += dist * 2;
             }
@@ -89,7 +89,7 @@ impl Engine for Naive {
 
                     // IFFT BUTTERFLY
 
-                    Self::xor(b, a);
+                    utils::xor(b, a);
                     if log_m != GF_MODULUS {
                         self.mul_add(a, b, log_m);
                     }

@@ -22,7 +22,7 @@
 use once_cell::sync::OnceCell;
 
 use crate::engine::{
-    self, fwht, GfElement, CANTOR_BASIS, GF_BITS, GF_MODULUS, GF_ORDER, GF_POLYNOMIAL,
+    fwht, utils, GfElement, CANTOR_BASIS, GF_BITS, GF_MODULUS, GF_ORDER, GF_POLYNOMIAL,
 };
 
 // ======================================================================
@@ -99,7 +99,7 @@ pub fn mul(x: GfElement, log_m: GfElement, exp: &Exp, log: &Log) -> GfElement {
     if x == 0 {
         0
     } else {
-        exp[engine::add_mod(log[x as usize], log_m) as usize]
+        exp[utils::add_mod(log[x as usize], log_m) as usize]
     }
 }
 
@@ -252,7 +252,7 @@ pub fn initialize_skew() -> &'static Skew {
                 GF_MODULUS - log[mul(temp[m], log[(temp[m] ^ 1) as usize], exp, log) as usize];
 
             for i in m + 1..GF_BITS - 1 {
-                let sum = engine::add_mod(log[(temp[i] ^ 1) as usize], temp[m]);
+                let sum = utils::add_mod(log[(temp[i] ^ 1) as usize], temp[m]);
                 temp[i] = mul(temp[i], sum, exp, log);
             }
         }

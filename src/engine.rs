@@ -32,9 +32,8 @@
 //! [`ReedSolomonDecoder`]: crate::ReedSolomonDecoder
 //! [`rate`]: crate::rate
 
-use std::iter::zip;
-
 pub(crate) use self::shards::Shards;
+pub(crate) use utils::{fft_skew_end, formal_derivative, ifft_skew_end, xor_within};
 
 pub use self::{
     engine_default::DefaultEngine, engine_naive::Naive, engine_nosimd::NoSimd, shards::ShardsRefMut,
@@ -60,6 +59,7 @@ mod engine_neon;
 
 mod fwht;
 mod shards;
+mod utils;
 
 pub mod tables;
 
@@ -91,49 +91,14 @@ pub const CANTOR_BASIS: [GfElement; GF_BITS] = [
 pub type GfElement = u16;
 
 // ======================================================================
-// FUNCTIONS - PUBLIC - Galois field operations
-
-/// Some kind of addition.
-#[inline(always)]
-pub fn add_mod(x: GfElement, y: GfElement) -> GfElement {
-    let sum = u32::from(x) + u32::from(y);
-    (sum + (sum >> GF_BITS)) as GfElement
-}
-
-/// Some kind of subtraction.
-#[inline(always)]
-pub fn sub_mod(x: GfElement, y: GfElement) -> GfElement {
-    let dif = u32::from(x).wrapping_sub(u32::from(y));
-    dif.wrapping_add(dif >> GF_BITS) as GfElement
-}
-
-// ======================================================================
-// FUNCTIONS - CRATE - Evaluate polynomial
-
-// We have this function here instead of inside 'trait Engine' to allow
-// it to be included and compiled with SIMD features enabled within the
-// SIMD engines.
-#[inline(always)]
-pub(crate) fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-    let log_walsh = tables::initialize_log_walsh();
-
-    fwht::fwht(erasures, truncated_size);
-
-    for (e, factor) in std::iter::zip(erasures.iter_mut(), log_walsh.iter()) {
-        let product = u32::from(*e) * u32::from(*factor);
-        *e = add_mod(product as GfElement, (product >> GF_BITS) as GfElement);
-    }
-
-    fwht::fwht(erasures, GF_ORDER);
-}
-
-// ======================================================================
 // Engine - PUBLIC
 
-/// Implementation of basic low-level algorithms needed
-/// for Reed-Solomon encoding/decoding.
+/// Implementation of compute-intensive low-level algorithms needed
+/// for Reed-Solomon encoding/decoding. This is the trait you would
+/// implement to provide SIMD support for a CPU architecture not
+/// already provided.
 ///
-/// These algorithms are not properly documented.
+/// These algorithms are not properly documented in this library.
 ///
 /// [`Naive`] engine is provided for those who want to
 /// study the source code to understand [`Engine`].
@@ -187,74 +152,12 @@ pub trait Engine {
     // ============================================================
     // PROVIDED
 
-    /// `x[] ^= y[]`
-    #[inline(always)]
-    fn xor(xs: &mut [[u8; 64]], ys: &[[u8; 64]])
-    where
-        Self: Sized,
-    {
-        debug_assert_eq!(xs.len(), ys.len());
-
-        for (x_chunk, y_chunk) in zip(xs.iter_mut(), ys.iter()) {
-            for (x, y) in zip(x_chunk.iter_mut(), y_chunk.iter()) {
-                *x ^= y;
-            }
-        }
-    }
-
     /// Evaluate polynomial.
     fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize)
     where
         Self: Sized,
     {
-        eval_poly(erasures, truncated_size)
-    }
-
-    /// FFT with `skew_delta = pos + size`.
-    #[inline(always)]
-    fn fft_skew_end(
-        &self,
-        data: &mut ShardsRefMut,
-        pos: usize,
-        size: usize,
-        truncated_size: usize,
-    ) {
-        self.fft(data, pos, size, truncated_size, pos + size)
-    }
-
-    /// Formal derivative.
-    fn formal_derivative(data: &mut ShardsRefMut)
-    where
-        Self: Sized,
-    {
-        for i in 1..data.len() {
-            let width: usize = 1 << i.trailing_zeros();
-            Self::xor_within(data, i - width, i, width);
-        }
-    }
-
-    /// IFFT with `skew_delta = pos + size`.
-    #[inline(always)]
-    fn ifft_skew_end(
-        &self,
-        data: &mut ShardsRefMut,
-        pos: usize,
-        size: usize,
-        truncated_size: usize,
-    ) {
-        self.ifft(data, pos, size, truncated_size, pos + size)
-    }
-
-    /// `data[x .. x + count] ^= data[y .. y + count]`
-    ///
-    /// Ranges must not overlap.
-    #[inline(always)]
-    fn xor_within(data: &mut ShardsRefMut, x: usize, y: usize, count: usize)
-    where
-        Self: Sized,
-    {
-        let (xs, ys) = data.flat2_mut(x, y, count);
-        Self::xor(xs, ys);
+        utils::eval_poly(erasures, truncated_size)
     }
 }
 
