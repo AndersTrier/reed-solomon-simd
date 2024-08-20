@@ -49,7 +49,7 @@ pub(crate) fn ifft_skew_end(
 // SIMD engines.
 #[inline(always)]
 pub(crate) fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-    let log_walsh = tables::initialize_log_walsh();
+    let log_walsh = &*tables::LOG_WALSH;
 
     fwht::fwht(erasures, truncated_size);
 

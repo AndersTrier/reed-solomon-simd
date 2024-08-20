@@ -19,7 +19,6 @@ include = [
 
 [dependencies]
 fixedbitset = "0.4.0"
-once_cell = "1.8.0"
 
 [build-dependencies]
 readme-rustdocifier = "0.1.0"

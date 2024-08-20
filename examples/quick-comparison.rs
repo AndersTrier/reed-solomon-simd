@@ -44,8 +44,14 @@ fn test_reed_solomon_simd(count: usize) {
     // INIT
 
     let start = Instant::now();
-    // This initializes all the needed tables.
+
+    // This table is only used in decoding.
+    let log_walsh = &reed_solomon_simd::engine::tables::LOG_WALSH;
+    std::sync::LazyLock::force(log_walsh);
+
+    // This initializes the remaining needed tables.
     reed_solomon_simd::engine::DefaultEngine::new();
+
     let elapsed = start.elapsed();
     print!("> reed-solomon-simd        {:9}", elapsed.as_micros());
 

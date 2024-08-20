@@ -19,7 +19,7 @@
 //! [`Engine`]: crate::engine
 //!
 
-use once_cell::sync::OnceCell;
+use std::sync::LazyLock;
 
 use crate::engine::{
     fwht, utils, GfElement, CANTOR_BASIS, GF_BITS, GF_MODULUS, GF_ORDER, GF_POLYNOMIAL,
@@ -74,21 +74,33 @@ pub type Mul16 = [[[GfElement; 16]; 4]; GF_ORDER];
 pub type Skew = [GfElement; GF_MODULUS as usize];
 
 // ======================================================================
-// ExpLog - PRIVATE
+// ExpLog - PUBLIC
 
-struct ExpLog {
-    exp: Box<Exp>,
-    log: Box<Log>,
+/// Struct holding the [`Exp`] and [`Log`] lookup tables.
+pub struct ExpLog {
+    /// Exponentiation table.
+    pub exp: Box<Exp>,
+    /// Logarithm table.
+    pub log: Box<Log>,
 }
 
 // ======================================================================
-// STATIC - PRIVATE
+// STATIC - PUBLIC
 
-static EXP_LOG: OnceCell<ExpLog> = OnceCell::new();
-static LOG_WALSH: OnceCell<Box<LogWalsh>> = OnceCell::new();
-static MUL16: OnceCell<Box<Mul16>> = OnceCell::new();
-static MUL128: OnceCell<Box<Mul128>> = OnceCell::new();
-static SKEW: OnceCell<Box<Skew>> = OnceCell::new();
+/// Lazily initialized exponentiation and logarithm tables.
+pub static EXP_LOG: LazyLock<ExpLog> = LazyLock::new(initialize_exp_log);
+
+/// Lazily initialized logarithmic Walsh transform table.
+pub static LOG_WALSH: LazyLock<Box<LogWalsh>> = LazyLock::new(initialize_log_walsh);
+
+/// Lazily initialized multiplication table for the NoSimd engine.
+pub static MUL16: LazyLock<Box<Mul16>> = LazyLock::new(initialize_mul16);
+
+/// Lazily initialized multiplication table for SIMD engines.
+pub static MUL128: LazyLock<Box<Mul128>> = LazyLock::new(initialize_mul128);
+
+/// Lazily initialized skew table used in FFT and IFFT operations.
+pub static SKEW: LazyLock<Box<Skew>> = LazyLock::new(initialize_skew);
 
 // ======================================================================
 // FUNCTIONS - PUBLIC - math
@@ -104,163 +116,147 @@ pub fn mul(x: GfElement, log_m: GfElement, exp: &Exp, log: &Log) -> GfElement {
 }
 
 // ======================================================================
-// FUNCTIONS - PUBLIC - initialize tables
+// FUNCTIONS - PRIVATE - initialize tables
 
-/// Initializes and returns [`Exp`] and [`Log`] tables.
 #[allow(clippy::needless_range_loop)]
-pub fn initialize_exp_log() -> (&'static Exp, &'static Log) {
-    let exp_log = EXP_LOG.get_or_init(|| {
-        let mut exp = Box::new([0; GF_ORDER]);
-        let mut log = Box::new([0; GF_ORDER]);
+fn initialize_exp_log() -> ExpLog {
+    let mut exp = Box::new([0; GF_ORDER]);
+    let mut log = Box::new([0; GF_ORDER]);
 
-        // GENERATE LFSR TABLE
+    // GENERATE LFSR TABLE
 
-        let mut state = 1;
-        for i in 0..GF_MODULUS {
-            exp[state] = i;
-            state <<= 1;
-            if state >= GF_ORDER {
-                state ^= GF_POLYNOMIAL;
-            }
+    let mut state = 1;
+    for i in 0..GF_MODULUS {
+        exp[state] = i;
+        state <<= 1;
+        if state >= GF_ORDER {
+            state ^= GF_POLYNOMIAL;
         }
-        exp[0] = GF_MODULUS;
+    }
+    exp[0] = GF_MODULUS;
 
-        // CONVERT TO CANTOR BASIS
+    // CONVERT TO CANTOR BASIS
 
-        log[0] = 0;
-        for i in 0..GF_BITS {
-            let width = 1usize << i;
-            for j in 0..width {
-                log[j + width] = log[j] ^ CANTOR_BASIS[i];
-            }
+    log[0] = 0;
+    for i in 0..GF_BITS {
+        let width = 1usize << i;
+        for j in 0..width {
+            log[j + width] = log[j] ^ CANTOR_BASIS[i];
         }
+    }
 
-        for i in 0..GF_ORDER {
-            log[i] = exp[log[i] as usize];
-        }
+    for i in 0..GF_ORDER {
+        log[i] = exp[log[i] as usize];
+    }
 
-        for i in 0..GF_ORDER {
-            exp[log[i] as usize] = i as GfElement;
-        }
+    for i in 0..GF_ORDER {
+        exp[log[i] as usize] = i as GfElement;
+    }
 
-        exp[GF_MODULUS as usize] = exp[0];
+    exp[GF_MODULUS as usize] = exp[0];
 
-        ExpLog { exp, log }
-    });
-
-    (&exp_log.exp, &exp_log.log)
+    ExpLog { exp, log }
 }
 
-/// Initializes and returns [`LogWalsh`] table.
-pub fn initialize_log_walsh() -> &'static LogWalsh {
-    LOG_WALSH.get_or_init(|| {
-        let (_, log) = initialize_exp_log();
+fn initialize_log_walsh() -> Box<LogWalsh> {
+    let log = *EXP_LOG.log;
 
-        let mut log_walsh: Box<LogWalsh> = Box::new([0; GF_ORDER]);
+    let mut log_walsh: Box<LogWalsh> = Box::new([0; GF_ORDER]);
 
-        log_walsh.copy_from_slice(log.as_ref());
-        log_walsh[0] = 0;
-        fwht::fwht(log_walsh.as_mut(), GF_ORDER);
+    log_walsh.copy_from_slice(log.as_ref());
+    log_walsh[0] = 0;
+    fwht::fwht(log_walsh.as_mut(), GF_ORDER);
 
-        log_walsh
-    })
+    log_walsh
 }
 
-/// Initializes and returns [`Mul16`] table.
-pub fn initialize_mul16() -> &'static Mul16 {
-    MUL16.get_or_init(|| {
-        let (exp, log) = initialize_exp_log();
+fn initialize_mul16() -> Box<Mul16> {
+    let exp = &*EXP_LOG.exp;
+    let log = &*EXP_LOG.log;
+    let mut mul16 = vec![[[0; 16]; 4]; GF_ORDER];
 
-        let mut mul16 = vec![[[0; 16]; 4]; GF_ORDER];
-
-        for log_m in 0..=GF_MODULUS {
-            let lut = &mut mul16[log_m as usize];
-            for i in 0..16 {
-                lut[0][i] = mul(i as GfElement, log_m, exp, log);
-                lut[1][i] = mul((i << 4) as GfElement, log_m, exp, log);
-                lut[2][i] = mul((i << 8) as GfElement, log_m, exp, log);
-                lut[3][i] = mul((i << 12) as GfElement, log_m, exp, log);
-            }
+    for log_m in 0..=GF_MODULUS {
+        let lut = &mut mul16[log_m as usize];
+        for i in 0..16 {
+            lut[0][i] = mul(i as GfElement, log_m, exp, log);
+            lut[1][i] = mul((i << 4) as GfElement, log_m, exp, log);
+            lut[2][i] = mul((i << 8) as GfElement, log_m, exp, log);
+            lut[3][i] = mul((i << 12) as GfElement, log_m, exp, log);
         }
+    }
 
-        mul16.into_boxed_slice().try_into().unwrap()
-    })
+    mul16.into_boxed_slice().try_into().unwrap()
 }
 
-/// Initializes and returns [`Mul128`] table.
-pub fn initialize_mul128() -> &'static Mul128 {
+fn initialize_mul128() -> Box<Mul128> {
     // Based on:
     // https://github.com/catid/leopard/blob/22ddc7804998d31c8f1a2617ee720e063b1fa6cd/LeopardFF16.cpp#L375
-    MUL128.get_or_init(|| {
-        let (exp, log) = initialize_exp_log();
+    let exp = &*EXP_LOG.exp;
+    let log = &*EXP_LOG.log;
 
-        let mut mul128 = vec![
-            Multiply128lutT {
-                lo: [0; 4],
-                hi: [0; 4],
-            };
-            GF_ORDER
-        ];
+    let mut mul128 = vec![
+        Multiply128lutT {
+            lo: [0; 4],
+            hi: [0; 4],
+        };
+        GF_ORDER
+    ];
 
-        for log_m in 0..=GF_MODULUS {
-            for i in 0..=3 {
-                let mut prod_lo = [0u8; 16];
-                let mut prod_hi = [0u8; 16];
-                for x in 0..16 {
-                    let prod = mul((x << (i * 4)) as GfElement, log_m, exp, log);
-                    prod_lo[x] = prod as u8;
-                    prod_hi[x] = (prod >> 8) as u8;
-                }
-                mul128[log_m as usize].lo[i] = u128::from_le_bytes(prod_lo);
-                mul128[log_m as usize].hi[i] = u128::from_le_bytes(prod_hi);
+    for log_m in 0..=GF_MODULUS {
+        for i in 0..=3 {
+            let mut prod_lo = [0u8; 16];
+            let mut prod_hi = [0u8; 16];
+            for x in 0..16 {
+                let prod = mul((x << (i * 4)) as GfElement, log_m, exp, log);
+                prod_lo[x] = prod as u8;
+                prod_hi[x] = (prod >> 8) as u8;
             }
+            mul128[log_m as usize].lo[i] = u128::from_le_bytes(prod_lo);
+            mul128[log_m as usize].hi[i] = u128::from_le_bytes(prod_hi);
         }
+    }
 
-        mul128.into_boxed_slice().try_into().unwrap()
-    })
+    mul128.into_boxed_slice().try_into().unwrap()
 }
 
-/// Initializes and returns [`Skew`] table.
 #[allow(clippy::needless_range_loop)]
-pub fn initialize_skew() -> &'static Skew {
-    SKEW.get_or_init(|| {
-        let (exp, log) = initialize_exp_log();
+fn initialize_skew() -> Box<Skew> {
+    let exp = &*EXP_LOG.exp;
+    let log = &*EXP_LOG.log;
 
-        let mut skew = Box::new([0; GF_MODULUS as usize]);
+    let mut skew = Box::new([0; GF_MODULUS as usize]);
 
-        let mut temp = [0; GF_BITS - 1];
+    let mut temp = [0; GF_BITS - 1];
 
-        for i in 1..GF_BITS {
-            temp[i - 1] = 1 << i;
-        }
+    for i in 1..GF_BITS {
+        temp[i - 1] = 1 << i;
+    }
 
-        for m in 0..GF_BITS - 1 {
-            let step: usize = 1 << (m + 1);
+    for m in 0..GF_BITS - 1 {
+        let step: usize = 1 << (m + 1);
 
-            skew[(1 << m) - 1] = 0;
+        skew[(1 << m) - 1] = 0;
 
-            for i in m..GF_BITS - 1 {
-                let s: usize = 1 << (i + 1);
-                let mut j = (1 << m) - 1;
-                while j < s {
-                    skew[j + s] = skew[j] ^ temp[i];
-                    j += step;
-                }
-            }
-
-            temp[m] =
-                GF_MODULUS - log[mul(temp[m], log[(temp[m] ^ 1) as usize], exp, log) as usize];
-
-            for i in m + 1..GF_BITS - 1 {
-                let sum = utils::add_mod(log[(temp[i] ^ 1) as usize], temp[m]);
-                temp[i] = mul(temp[i], sum, exp, log);
+        for i in m..GF_BITS - 1 {
+            let s: usize = 1 << (i + 1);
+            let mut j = (1 << m) - 1;
+            while j < s {
+                skew[j + s] = skew[j] ^ temp[i];
+                j += step;
             }
         }
 
-        for i in 0..GF_MODULUS as usize {
-            skew[i] = log[skew[i] as usize];
-        }
+        temp[m] = GF_MODULUS - log[mul(temp[m], log[(temp[m] ^ 1) as usize], exp, log) as usize];
 
-        skew
-    })
+        for i in m + 1..GF_BITS - 1 {
+            let sum = utils::add_mod(log[(temp[i] ^ 1) as usize], temp[m]);
+            temp[i] = mul(temp[i], sum, exp, log);
+        }
+    }
+
+    for i in 0..GF_MODULUS as usize {
+        skew[i] = log[skew[i] as usize];
+    }
+
+    skew
 }
