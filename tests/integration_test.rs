@@ -1,4 +1,7 @@
 use rand::Rng;
+use rand::SeedableRng;
+use rand_chacha::ChaCha8Rng;
+
 use std::collections::HashMap;
 
 use reed_solomon_simd::engine::NoSimd;
@@ -85,14 +88,20 @@ fn readme_example_2() -> Result<(), reed_solomon_simd::Error> {
     Ok(())
 }
 
+fn generate_shards(shard_count: usize, shard_bytes: usize, seed: u8) -> Vec<Vec<u8>> {
+    let mut rng = ChaCha8Rng::from_seed([seed; 32]);
+    let mut shards = vec![vec![0u8; shard_bytes]; shard_count];
+    for shard in &mut shards {
+        rng.fill::<[u8]>(shard);
+    }
+    shards
+}
+
 #[test]
 fn engine_intercompatibility() {
-    let engine_nosimd = NoSimd::new();
-    let mut encoder = DefaultRateEncoder::new(3, 5, 64, engine_nosimd, None).unwrap();
-
     let mut original_count;
     let mut recovery_count;
-    let mut rng = rand::thread_rng();
+    let mut rng = ChaCha8Rng::from_seed([3; 32]);
     loop {
         original_count = rng.gen_range(0..65536);
         recovery_count = rng.gen_range(0..65536);
@@ -101,33 +110,53 @@ fn engine_intercompatibility() {
         }
     }
 
-    let original = [
-        b"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do ",
-        b"eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut e",
-        b"nim ad minim veniam, quis nostrud exercitation ullamco laboris n",
-    ];
+    let mut shard_bytes = rng.gen_range(2..513);
 
-    for original in original {
-        encoder.add_original_shard(original).unwrap();
+    if shard_bytes % 2 != 0 {
+        shard_bytes -= 1;
+    }
+
+    let engine_nosimd = NoSimd::new();
+    let mut encoder = DefaultRateEncoder::new(
+        original_count,
+        recovery_count,
+        shard_bytes,
+        engine_nosimd,
+        None,
+    )
+    .unwrap();
+
+    let original = generate_shards(original_count, shard_bytes, 0);
+
+    for shard in &original {
+        encoder.add_original_shard(shard).unwrap();
     }
 
     let result = encoder.encode().unwrap();
     let recovery: Vec<_> = result.recovery_iter().collect();
 
-    let mut decoder = ReedSolomonDecoder::new(
-        3,  // total number of original shards
-        5,  // total number of recovery shards
-        64, // shard size in bytes
-    )
-    .unwrap();
+    let mut decoder = ReedSolomonDecoder::new(original_count, recovery_count, shard_bytes).unwrap();
 
-    decoder.add_original_shard(1, original[1]).unwrap();
-    decoder.add_recovery_shard(1, recovery[1]).unwrap();
-    decoder.add_recovery_shard(4, recovery[4]).unwrap();
+    // Let's add a random amount of shards
+    let shards_to_add = rng.gen_range(original_count..(original_count + recovery_count + 1));
+    let mut recovery_added = 0;
+
+    for (idx, shard) in recovery.iter().enumerate().take(shards_to_add) {
+        decoder.add_recovery_shard(idx, shard).unwrap();
+        recovery_added += 1;
+    }
+
+    for (idx, shard) in original
+        .iter()
+        .enumerate()
+        .take(shards_to_add - recovery_added)
+    {
+        decoder.add_original_shard(idx, shard).unwrap();
+    }
 
     let result = decoder.decode().unwrap();
-    let restored: HashMap<_, _> = result.restored_original_iter().collect();
 
-    assert_eq!(restored[&0], original[0]);
-    assert_eq!(restored[&2], original[2]);
+    for (idx, restored_shard) in result.restored_original_iter() {
+        assert_eq!(restored_shard, original[idx]);
+    }
 }
