@@ -137,8 +137,8 @@ let mut encoder = ReedSolomonEncoder::new(
     64, // shard size in bytes
 )?;
 
-for original in original {
-    encoder.add_original_shard(original)?;
+for shard in original {
+    encoder.add_original_shard(shard)?;
 }
 
 let result = encoder.encode()?;
