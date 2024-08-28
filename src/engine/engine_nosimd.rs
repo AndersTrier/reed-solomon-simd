@@ -316,3 +316,32 @@ impl NoSimd {
 // TESTS
 
 // Engines are tested indirectly via roundtrip tests of HighRate and LowRate.
+
+#[cfg(test)]
+mod tests {
+    use crate::engine::{Engine, Naive, NoSimd};
+
+    use rand::{Rng, SeedableRng};
+    use rand_chacha::ChaCha8Rng;
+
+    #[test]
+    fn mul() {
+        let naive = Naive::default();
+        let nosimd = NoSimd::default();
+
+        let mut rng = ChaCha8Rng::from_seed([0; 32]);
+
+        for shard_chunks in 0..6 {
+            let mut data_nosimd = vec![[0; 64]; shard_chunks];
+            rng.fill(data_nosimd.as_flattened_mut());
+            let mut data_naive = data_nosimd.clone();
+
+            let log_m = rng.gen();
+
+            nosimd.mul(&mut data_nosimd, log_m);
+            naive.mul(&mut data_naive, log_m);
+
+            assert_eq!(data_nosimd, data_naive);
+        }
+    }
+}
