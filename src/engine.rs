@@ -93,12 +93,11 @@ pub type GfElement = u16;
 // ======================================================================
 // Engine - PUBLIC
 
-/// Implementation of compute-intensive low-level algorithms needed
-/// for Reed-Solomon encoding/decoding. This is the trait you would
-/// implement to provide SIMD support for a CPU architecture not
-/// already provided.
+/// Trait for compute-intensive low-level algorithms needed
+/// for Reed-Solomon encoding/decoding.
 ///
-/// These algorithms are not properly documented in this library.
+/// This is the trait you would implement to provide SIMD support
+/// for a CPU architecture not already provided.
 ///
 /// [`Naive`] engine is provided for those who want to
 /// study the source code to understand [`Engine`].
