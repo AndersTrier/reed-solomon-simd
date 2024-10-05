@@ -807,6 +807,10 @@ pub(crate) const HIGH_3000_30000_14: &str =
 pub(crate) const HIGH_60000_3000_12: &str =
     "88e68e1d86a0fc168a549e195845d20b49ff85734db20d560c36ff2e14f78676";
 
+// 34000 original ; 2000 recovery ; 123 seed ; shard_bytes = 8
+pub(crate) const HIGH_34000_2000_123_8: &str =
+    "8bd33dbe0189b5bffcb843fd93fd8c85daada2533cc7df0c352773e846b701f5";
+
 // ==================================================
 // LOW RATE
 
@@ -832,3 +836,7 @@ pub(crate) const LOW_3000_60000_13: &str =
 // NOTE: Chunk size is 4096, with partial chunk at end.
 pub(crate) const LOW_30000_3000_15: &str =
     "202f99a2ade121d2404e967d5c04ff390f7a147070a2dcbe71dcf3baeafdf93a";
+
+// 2000 original ; 34000 recovery ; 123 seed ; shard_bytes = 8
+pub(crate) const LOW_2000_34000_123_8: &str =
+    "9bd2da4d03580d3e2471c60a49595b209a6f9a5f1d504d0c4bd017b953efdd99";

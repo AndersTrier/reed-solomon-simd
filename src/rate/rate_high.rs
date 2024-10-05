@@ -404,6 +404,20 @@ mod tests {
         );
     }
 
+    #[test]
+    fn roundtrip_34000_2000_shard_size_8() {
+        roundtrip_single!(
+            HighRate,
+            34000,
+            2000,
+            8,
+            test_util::HIGH_34000_2000_123_8,
+            &[0..32000],
+            &[0..2000],
+            123
+        );
+    }
+
     // ============================================================
     // ROUNDTRIPS - TWO ROUNDS
 
