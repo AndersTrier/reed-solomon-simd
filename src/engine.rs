@@ -59,9 +59,9 @@ mod engine_neon;
 
 mod fwht;
 mod shards;
-mod utils;
 
 pub mod tables;
+pub mod utils;
 
 // ======================================================================
 // CONST - PUBLIC

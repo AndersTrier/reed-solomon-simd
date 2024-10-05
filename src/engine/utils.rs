@@ -1,5 +1,55 @@
+//! A collection of utility functions and helpers to facilitate the implementation of the [`Engine`] trait.
+//!
+//! [`Engine`]: crate::engine::Engine
+
 use crate::engine::{fwht, tables, Engine, GfElement, ShardsRefMut, GF_BITS, GF_ORDER};
 use std::iter::zip;
+
+// ======================================================================
+// FUNCTIONS - PUBLIC
+
+/// Evaluate Polynomial using Fast Walsh-Hadamard Transform (FWHT).
+///
+/// This function is designed to be inlined and be compiled with SIMD
+/// features enabled within an Engine's implementation of `eval_poly`.
+///
+/// See [`Avx2`] for an example on how to do this.
+///
+/// [`Avx2`]: crate::engine::Avx2
+#[inline(always)]
+pub fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
+    let log_walsh = &*tables::LOG_WALSH;
+
+    fwht::fwht(erasures, truncated_size);
+
+    for (e, factor) in std::iter::zip(erasures.iter_mut(), log_walsh.iter()) {
+        let product = u32::from(*e) * u32::from(*factor);
+        *e = add_mod(product as GfElement, (product >> GF_BITS) as GfElement);
+    }
+
+    fwht::fwht(erasures, GF_ORDER);
+}
+
+/// `x[] ^= y[]`
+#[inline(always)]
+pub fn xor(xs: &mut [[u8; 64]], ys: &[[u8; 64]]) {
+    debug_assert_eq!(xs.len(), ys.len());
+
+    for (x_chunk, y_chunk) in zip(xs.iter_mut(), ys.iter()) {
+        for (x, y) in zip(x_chunk.iter_mut(), y_chunk.iter()) {
+            *x ^= y;
+        }
+    }
+}
+
+/// `data[x .. x + count] ^= data[y .. y + count]`
+///
+/// Ranges must not overlap.
+#[inline(always)]
+pub fn xor_within(data: &mut ShardsRefMut, x: usize, y: usize, count: usize) {
+    let (xs, ys) = data.flat2_mut(x, y, count);
+    xor(xs, ys);
+}
 
 // ======================================================================
 // FUNCTIONS - CRATE - Galois field operations
@@ -43,43 +93,6 @@ pub(crate) fn ifft_skew_end(
     truncated_size: usize,
 ) {
     engine.ifft(data, pos, size, truncated_size, pos + size)
-}
-
-// Meant to be included and compiled with SIMD features enabled within the
-// SIMD engines.
-#[inline(always)]
-pub(crate) fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-    let log_walsh = &*tables::LOG_WALSH;
-
-    fwht::fwht(erasures, truncated_size);
-
-    for (e, factor) in std::iter::zip(erasures.iter_mut(), log_walsh.iter()) {
-        let product = u32::from(*e) * u32::from(*factor);
-        *e = add_mod(product as GfElement, (product >> GF_BITS) as GfElement);
-    }
-
-    fwht::fwht(erasures, GF_ORDER);
-}
-
-/// `x[] ^= y[]`
-#[inline(always)]
-pub(crate) fn xor(xs: &mut [[u8; 64]], ys: &[[u8; 64]]) {
-    debug_assert_eq!(xs.len(), ys.len());
-
-    for (x_chunk, y_chunk) in zip(xs.iter_mut(), ys.iter()) {
-        for (x, y) in zip(x_chunk.iter_mut(), y_chunk.iter()) {
-            *x ^= y;
-        }
-    }
-}
-
-// `data[x .. x + count] ^= data[y .. y + count]`
-//
-// Ranges must not overlap.
-#[inline(always)]
-pub(crate) fn xor_within(data: &mut ShardsRefMut, x: usize, y: usize, count: usize) {
-    let (xs, ys) = data.flat2_mut(x, y, count);
-    xor(xs, ys);
 }
 
 // Formal derivative.
