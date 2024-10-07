@@ -24,3 +24,9 @@
 ## 2.2.2 - 2024-04-22
 - Make DefaultEngine Send + Sync.
 - Slightly faster `eval_poly()` (used in decoding).
+
+## 3.0.0 - 2024-10-07
+- Require shard length to be divisible by 2 instead of 64. Note regarding compatibility between versions: Shards of a length divisible by 64 are compatible across versions.
+- Improved types for internal data structures. This raises the Minimum Supported Rust Version (MSRV) to 1.80.
+- Faster `NoSimd` engine.
+- Removed dependencies: bytemuck and once\_cell.
