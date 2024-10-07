@@ -77,6 +77,10 @@ impl<E: Engine> RateEncoder<E> for LowRateEncoder<E> {
             engine::fft_skew_end(engine, &mut work, chunk_start, chunk_size, last_count);
         }
 
+        // UNDO LAST CHUNK ENCODING
+
+        self.work.undo_last_chunk_encoding();
+
         // DONE
 
         Ok(EncoderResult::new(&mut self.work))
@@ -241,6 +245,10 @@ impl<E: Engine> RateDecoder<E> for LowRateDecoder<E> {
             }
         }
 
+        // UNDO LAST CHUNK ENCODING
+
+        self.work.undo_last_chunk_encoding();
+
         // DONE
 
         Ok(DecoderResult::new(&mut self.work))
@@ -393,6 +401,20 @@ mod tests {
             &[],
             &[0..32768],
             11,
+        );
+    }
+
+    #[test]
+    fn roundtrip_2000_34000_shard_size_8() {
+        roundtrip_single!(
+            LowRate,
+            2000,
+            34000,
+            8,
+            test_util::LOW_2000_34000_123_8,
+            &[0..2000],
+            &[0..32000],
+            123
         );
     }
 

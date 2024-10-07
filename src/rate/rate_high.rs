@@ -77,6 +77,10 @@ impl<E: Engine> RateEncoder<E> for HighRateEncoder<E> {
 
         engine.fft(&mut work, 0, chunk_size, recovery_count, 0);
 
+        // UNDO LAST CHUNK ENCODING
+
+        self.work.undo_last_chunk_encoding();
+
         // DONE
 
         Ok(EncoderResult::new(&mut self.work))
@@ -241,6 +245,10 @@ impl<E: Engine> RateDecoder<E> for HighRateDecoder<E> {
             }
         }
 
+        // UNDO LAST CHUNK ENCODING
+
+        self.work.undo_last_chunk_encoding();
+
         // DONE
 
         Ok(DecoderResult::new(&mut self.work))
@@ -393,6 +401,20 @@ mod tests {
             &[3000..60000],
             &[0..3000],
             12,
+        );
+    }
+
+    #[test]
+    fn roundtrip_34000_2000_shard_size_8() {
+        roundtrip_single!(
+            HighRate,
+            34000,
+            2000,
+            8,
+            test_util::HIGH_34000_2000_123_8,
+            &[0..32000],
+            &[0..2000],
+            123
         );
     }
 

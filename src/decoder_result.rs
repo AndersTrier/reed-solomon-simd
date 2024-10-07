@@ -103,15 +103,11 @@ mod tests {
     use super::*;
     use crate::{test_util, ReedSolomonDecoder, ReedSolomonEncoder};
 
-    #[test]
-    // DecoderResult::restored_original
-    // DecoderResult::restored_original_iter
-    // RestoredOriginal
-    fn decoder_result() {
-        let original = test_util::generate_original(3, 1024, 0);
+    fn simple_roundtrip(shard_size: usize) {
+        let original = test_util::generate_original(3, shard_size, 0);
 
-        let mut encoder = ReedSolomonEncoder::new(3, 2, 1024).unwrap();
-        let mut decoder = ReedSolomonDecoder::new(3, 2, 1024).unwrap();
+        let mut encoder = ReedSolomonEncoder::new(3, 2, shard_size).unwrap();
+        let mut decoder = ReedSolomonDecoder::new(3, 2, shard_size).unwrap();
 
         for original in &original {
             encoder.add_original_shard(original).unwrap();
@@ -119,6 +115,8 @@ mod tests {
 
         let result = encoder.encode().unwrap();
         let recovery: Vec<_> = result.recovery_iter().collect();
+
+        assert!(recovery.iter().all(|slice| slice.len() == shard_size));
 
         decoder.add_original_shard(1, &original[1]).unwrap();
         decoder.add_recovery_shard(0, recovery[0]).unwrap();
@@ -136,5 +134,20 @@ mod tests {
         assert_eq!(iter.next(), Some((2, original[2].as_slice())));
         assert_eq!(iter.next(), None);
         assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    // DecoderResult::restored_original
+    // DecoderResult::restored_original_iter
+    // RestoredOriginal
+    fn decoder_result() {
+        simple_roundtrip(1024);
+    }
+
+    #[test]
+    fn shard_size_not_divisible_by_64() {
+        for shard_size in [2, 4, 6, 30, 32, 34, 62, 64, 66, 126, 128, 130] {
+            simple_roundtrip(shard_size);
+        }
     }
 }
