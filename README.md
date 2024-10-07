@@ -191,6 +191,10 @@ Use `cargo test -- --ignored` to run those.
 
 The only use of `unsafe` in this crate is to allow for target specific optimizations in [`Ssse3`], [`Avx2`] and [`Neon`].
 
+## Compatibility
+
+Starting from version 3.0.0, shard sizes that are not multiples of 64 are supported. However, if your shard size is a multiple of 64, it remains compatible across all versions.
+
 ## Credits
 
 This crate is a fork Markus Laire's [`reed-solomon-16`] crate, which in turn
