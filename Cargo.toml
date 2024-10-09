@@ -41,3 +41,6 @@ bench = false
 [[bench]]
 name = "benchmarks"
 harness = false
+
+[features]
+unstable-simd = []
