@@ -14,7 +14,7 @@ pub struct EncoderResult<'a> {
     work: &'a mut EncoderWork,
 }
 
-impl<'a> EncoderResult<'a> {
+impl EncoderResult<'_> {
     /// Returns recovery shard with given `index`
     /// or `None` if `index >= recovery_count`.
     ///
@@ -45,7 +45,7 @@ impl<'a> EncoderResult<'a> {
 // ======================================================================
 // EncoderResult - IMPL DROP
 
-impl<'a> Drop for EncoderResult<'a> {
+impl Drop for EncoderResult<'_> {
     fn drop(&mut self) {
         self.work.reset_received();
     }
