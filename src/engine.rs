@@ -40,7 +40,7 @@ pub use self::{
 };
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-pub use self::{engine_avx2::Avx2, engine_ssse3::Ssse3};
+pub use self::{engine_avx2::Avx2, engine_avx512::Avx512, engine_ssse3::Ssse3};
 
 #[cfg(target_arch = "aarch64")]
 pub use self::engine_neon::Neon;
@@ -51,6 +51,8 @@ mod engine_nosimd;
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod engine_avx2;
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+mod engine_avx512;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod engine_ssse3;
 
