@@ -218,7 +218,7 @@ impl<'a> ShardsRefMut<'a> {
 // ======================================================================
 // ShardsRefMut - IMPL Index
 
-impl<'a> Index<usize> for ShardsRefMut<'a> {
+impl Index<usize> for ShardsRefMut<'_> {
     type Output = [[u8; 64]];
     fn index(&self, index: usize) -> &Self::Output {
         &self.data[index * self.shard_len_64..(index + 1) * self.shard_len_64]
@@ -228,7 +228,7 @@ impl<'a> Index<usize> for ShardsRefMut<'a> {
 // ======================================================================
 // ShardsRefMut - IMPL IndexMut
 
-impl<'a> IndexMut<usize> for ShardsRefMut<'a> {
+impl IndexMut<usize> for ShardsRefMut<'_> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.data[index * self.shard_len_64..(index + 1) * self.shard_len_64]
     }
@@ -237,7 +237,7 @@ impl<'a> IndexMut<usize> for ShardsRefMut<'a> {
 // ======================================================================
 // ShardsRefMut - CRATE
 
-impl<'a> ShardsRefMut<'a> {
+impl ShardsRefMut<'_> {
     pub(crate) fn copy_within(&mut self, mut src: usize, mut dest: usize, mut count: usize) {
         src *= self.shard_len_64;
         dest *= self.shard_len_64;

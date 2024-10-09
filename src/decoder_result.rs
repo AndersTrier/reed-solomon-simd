@@ -14,7 +14,7 @@ pub struct DecoderResult<'a> {
     work: &'a mut DecoderWork,
 }
 
-impl<'a> DecoderResult<'a> {
+impl DecoderResult<'_> {
     /// Returns restored original shard with given `index`
     /// or `None` if given `index` doesn't correspond to
     /// a missing original shard.
@@ -41,7 +41,7 @@ impl<'a> DecoderResult<'a> {
 // ======================================================================
 // DecoderResult - IMPL DROP
 
-impl<'a> Drop for DecoderResult<'a> {
+impl Drop for DecoderResult<'_> {
     fn drop(&mut self) {
         self.work.reset_received();
     }
