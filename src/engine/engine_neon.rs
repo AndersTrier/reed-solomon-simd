@@ -356,26 +356,22 @@ impl Neon {
     // Implementation of LEO_IFFTB_128
     #[inline(always)]
     fn ifftb_128(&self, x: &mut [u8; 64], y: &mut [u8; 64], lut_neon: LutNeon) {
-
         let x_ptr: *mut u8 = x.as_mut_ptr();
         let y_ptr: *mut u8 = y.as_mut_ptr();
-
-        //let (x_lo, x_hi) = x.split_at_mut(32);
-        //let (y_lo, y_hi) = y.split_at_mut(32);
-
 
         for offset in [0, 16] {
             unsafe {
                 let x_ptr_lo = x_ptr.add(offset);
                 let x_ptr_hi = x_ptr.add(offset + 32);
+
                 let y_ptr_lo = y_ptr.add(offset);
                 let y_ptr_hi = y_ptr.add(offset + 32);
 
                 let mut x_lo = vld1q_u8(x_ptr_lo);
                 let mut x_hi = vld1q_u8(x_ptr_hi);
 
-                let mut y_lo = vld1q_u8(y_ptr);
-                let mut y_hi = vld1q_u8(y_ptr.add(16 * 2));
+                let mut y_lo = vld1q_u8(y_ptr_lo);
+                let mut y_hi = vld1q_u8(y_ptr_hi);
 
                 y_lo = veorq_u8(y_lo, x_lo);
                 y_hi = veorq_u8(y_hi, x_hi);
@@ -389,36 +385,6 @@ impl Neon {
                 vst1q_u8(x_ptr_hi, x_hi);
             }
         }
-
-//        unsafe {
-//            let mut x0_lo = vld1q_u8(x_ptr);
-//            let mut x1_lo = vld1q_u8(x_ptr.add(16));
-//            let mut x0_hi = vld1q_u8(x_ptr.add(16 * 2));
-//            let mut x1_hi = vld1q_u8(x_ptr.add(16 * 3));
-//
-//            let mut y0_lo = vld1q_u8(y_ptr);
-//            let mut y1_lo = vld1q_u8(y_ptr.add(16));
-//            let mut y0_hi = vld1q_u8(y_ptr.add(16 * 2));
-//            let mut y1_hi = vld1q_u8(y_ptr.add(16 * 3));
-//
-//            y0_lo = veorq_u8(y0_lo, x0_lo);
-//            y1_lo = veorq_u8(y1_lo, x1_lo);
-//            y0_hi = veorq_u8(y0_hi, x0_hi);
-//            y1_hi = veorq_u8(y1_hi, x1_hi);
-//
-//            vst1q_u8(y_ptr, y0_lo);
-//            vst1q_u8(y_ptr.add(16), y1_lo);
-//            vst1q_u8(y_ptr.add(16 * 2), y0_hi);
-//            vst1q_u8(y_ptr.add(16 * 3), y1_hi);
-//
-//            (x0_lo, x0_hi) = Self::muladd_128(x0_lo, x0_hi, y0_lo, y0_hi, lut_neon);
-//            (x1_lo, x1_hi) = Self::muladd_128(x1_lo, x1_hi, y1_lo, y1_hi, lut_neon);
-//
-//            vst1q_u8(x_ptr, x0_lo);
-//            vst1q_u8(x_ptr.add(16), x1_lo);
-//            vst1q_u8(x_ptr.add(16 * 2), x0_hi);
-//            vst1q_u8(x_ptr.add(16 * 3), x1_hi);
-//        }
     }
 
     #[inline(always)]
