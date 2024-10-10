@@ -11,7 +11,7 @@ use crate::engine::{
 /// Optimized [`Engine`] without SIMD.
 ///
 /// [`NoSimd`] is a basic optimized engine which works on all CPUs.
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct NoSimd {
     mul16: &'static Mul16,
     skew: &'static Skew,

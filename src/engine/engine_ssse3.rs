@@ -19,7 +19,7 @@ use crate::engine::{
 /// [`NoSimd`] but takes advantage of the x86 SSSE3 SIMD instructions.
 ///
 /// [`NoSimd`]: crate::engine::NoSimd
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Ssse3 {
     mul128: &'static Mul128,
     skew: &'static Skew,
