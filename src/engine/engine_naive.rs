@@ -12,7 +12,7 @@ use crate::engine::{
 ///   the source code to understand [`Engine`].
 /// - [`Naive`] also includes some debug assertions
 ///   which are not present in other implementations.
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Naive {
     exp: &'static Exp,
     log: &'static Log,

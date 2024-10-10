@@ -14,7 +14,7 @@ use std::iter::zip;
 /// [`NoSimd`] but takes advantage of the Arm Neon SIMD instructions.
 ///
 /// [`NoSimd`]: crate::engine::NoSimd
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Neon {
     mul128: &'static Mul128,
     skew: &'static Skew,
