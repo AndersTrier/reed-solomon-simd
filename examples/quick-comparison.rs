@@ -23,13 +23,14 @@ fn main() {
     println!("                           µs (init)   µs (encode)   µs (decode)");
     println!("                           ---------   -----------   -----------");
 
-    for count in [32, 64, 128, 256, 512, 1024, 4 * 1024, 32 * 1024] {
+    for count in [8, 16, 32, 64, 128, 256, 512, 1024, 4 * 1024, 32 * 1024] {
         println!("\n{}:{} ({} kiB)", count, count, SHARD_BYTES / 1024);
         test_reed_solomon_simd(count);
         test_reed_solomon_16(count);
         test_reed_solomon_novelpoly(count);
         if count <= 128 {
             test_reed_solomon_erasure_8(count);
+            test_leopard_codec(count);
         }
         if count <= 512 {
             test_reed_solomon_erasure_16(count);
@@ -283,4 +284,54 @@ fn test_reed_solomon_novelpoly(count: usize) {
     // CHECK
 
     assert_eq!(reconstructed, original);
+}
+
+// ======================================================================
+// leopard-codec
+
+fn test_leopard_codec(count: usize) {
+    // INIT
+
+    // I don't see a way to ask the library to initialize the tables.
+    // Also the `leopard_codec::lut` module is private, so we can't do it directly.
+
+    print!("> leopard-codec                    ?");
+
+    // CREATE ORIGINAL
+
+    let mut original = vec![vec![0u8; SHARD_BYTES]; count];
+    let mut rng = ChaCha8Rng::from_seed([0; 32]);
+    for shard in &mut original {
+        rng.fill::<[u8]>(shard);
+    }
+
+    let mut recovery = vec![vec![0u8; SHARD_BYTES]; count];
+
+    let mut all_shards: Vec<&mut Vec<u8>> =
+        original.iter_mut().chain(recovery.iter_mut()).collect();
+
+    // ENCODE
+
+    let start = Instant::now();
+    leopard_codec::encode(&mut all_shards, count).unwrap();
+
+    let elapsed = start.elapsed();
+    print!("{:14}", elapsed.as_micros());
+
+    // PREPARE DECODE
+
+    let mut restored = vec![Vec::<u8>::new(); count];
+    let mut restored_and_recovery: Vec<&mut Vec<u8>> =
+        restored.iter_mut().chain(recovery.iter_mut()).collect();
+
+    // DECODE
+
+    let start = Instant::now();
+    leopard_codec::reconstruct(&mut restored_and_recovery, count).unwrap();
+
+    let elapsed = start.elapsed();
+    println!("{:14}", elapsed.as_micros());
+
+    // CHECK
+    assert_eq!(restored, original);
 }
