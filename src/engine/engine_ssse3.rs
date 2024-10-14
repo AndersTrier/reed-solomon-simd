@@ -133,14 +133,15 @@ impl Ssse3 {
             let x_ptr = chunk.as_mut_ptr() as *mut __m128i;
             unsafe {
                 let x0_lo = _mm_loadu_si128(x_ptr);
-                let x1_lo = _mm_loadu_si128(x_ptr.add(1));
                 let x0_hi = _mm_loadu_si128(x_ptr.add(2));
-                let x1_hi = _mm_loadu_si128(x_ptr.add(3));
                 let (prod0_lo, prod0_hi) = Self::mul_128(x0_lo, x0_hi, lut_ssse3);
-                let (prod1_lo, prod1_hi) = Self::mul_128(x1_lo, x1_hi, lut_ssse3);
                 _mm_storeu_si128(x_ptr, prod0_lo);
-                _mm_storeu_si128(x_ptr.add(1), prod1_lo);
                 _mm_storeu_si128(x_ptr.add(2), prod0_hi);
+
+                let x1_lo = _mm_loadu_si128(x_ptr.add(1));
+                let x1_hi = _mm_loadu_si128(x_ptr.add(3));
+                let (prod1_lo, prod1_hi) = Self::mul_128(x1_lo, x1_hi, lut_ssse3);
+                _mm_storeu_si128(x_ptr.add(1), prod1_lo);
                 _mm_storeu_si128(x_ptr.add(3), prod1_hi);
             }
         }
@@ -206,31 +207,27 @@ impl Ssse3 {
 
         unsafe {
             let mut x0_lo = _mm_loadu_si128(x_ptr);
-            let mut x1_lo = _mm_loadu_si128(x_ptr.add(1));
             let mut x0_hi = _mm_loadu_si128(x_ptr.add(2));
-            let mut x1_hi = _mm_loadu_si128(x_ptr.add(3));
-
             let mut y0_lo = _mm_loadu_si128(y_ptr);
-            let mut y1_lo = _mm_loadu_si128(y_ptr.add(1));
             let mut y0_hi = _mm_loadu_si128(y_ptr.add(2));
-            let mut y1_hi = _mm_loadu_si128(y_ptr.add(3));
-
             (x0_lo, x0_hi) = Self::muladd_128(x0_lo, x0_hi, y0_lo, y0_hi, lut_ssse3);
-            (x1_lo, x1_hi) = Self::muladd_128(x1_lo, x1_hi, y1_lo, y1_hi, lut_ssse3);
-
             _mm_storeu_si128(x_ptr, x0_lo);
-            _mm_storeu_si128(x_ptr.add(1), x1_lo);
             _mm_storeu_si128(x_ptr.add(2), x0_hi);
-            _mm_storeu_si128(x_ptr.add(3), x1_hi);
-
             y0_lo = _mm_xor_si128(y0_lo, x0_lo);
-            y1_lo = _mm_xor_si128(y1_lo, x1_lo);
             y0_hi = _mm_xor_si128(y0_hi, x0_hi);
-            y1_hi = _mm_xor_si128(y1_hi, x1_hi);
-
             _mm_storeu_si128(y_ptr, y0_lo);
-            _mm_storeu_si128(y_ptr.add(1), y1_lo);
             _mm_storeu_si128(y_ptr.add(2), y0_hi);
+
+            let mut x1_lo = _mm_loadu_si128(x_ptr.add(1));
+            let mut x1_hi = _mm_loadu_si128(x_ptr.add(3));
+            let mut y1_lo = _mm_loadu_si128(y_ptr.add(1));
+            let mut y1_hi = _mm_loadu_si128(y_ptr.add(3));
+            (x1_lo, x1_hi) = Self::muladd_128(x1_lo, x1_hi, y1_lo, y1_hi, lut_ssse3);
+            _mm_storeu_si128(x_ptr.add(1), x1_lo);
+            _mm_storeu_si128(x_ptr.add(3), x1_hi);
+            y1_lo = _mm_xor_si128(y1_lo, x1_lo);
+            y1_hi = _mm_xor_si128(y1_hi, x1_hi);
+            _mm_storeu_si128(y_ptr.add(1), y1_lo);
             _mm_storeu_si128(y_ptr.add(3), y1_hi);
         }
     }
@@ -361,31 +358,27 @@ impl Ssse3 {
 
         unsafe {
             let mut x0_lo = _mm_loadu_si128(x_ptr);
-            let mut x1_lo = _mm_loadu_si128(x_ptr.add(1));
             let mut x0_hi = _mm_loadu_si128(x_ptr.add(2));
-            let mut x1_hi = _mm_loadu_si128(x_ptr.add(3));
-
             let mut y0_lo = _mm_loadu_si128(y_ptr);
-            let mut y1_lo = _mm_loadu_si128(y_ptr.add(1));
             let mut y0_hi = _mm_loadu_si128(y_ptr.add(2));
-            let mut y1_hi = _mm_loadu_si128(y_ptr.add(3));
-
             y0_lo = _mm_xor_si128(y0_lo, x0_lo);
-            y1_lo = _mm_xor_si128(y1_lo, x1_lo);
             y0_hi = _mm_xor_si128(y0_hi, x0_hi);
-            y1_hi = _mm_xor_si128(y1_hi, x1_hi);
-
             _mm_storeu_si128(y_ptr, y0_lo);
-            _mm_storeu_si128(y_ptr.add(1), y1_lo);
             _mm_storeu_si128(y_ptr.add(2), y0_hi);
-            _mm_storeu_si128(y_ptr.add(3), y1_hi);
-
             (x0_lo, x0_hi) = Self::muladd_128(x0_lo, x0_hi, y0_lo, y0_hi, lut_ssse3);
-            (x1_lo, x1_hi) = Self::muladd_128(x1_lo, x1_hi, y1_lo, y1_hi, lut_ssse3);
-
             _mm_storeu_si128(x_ptr, x0_lo);
-            _mm_storeu_si128(x_ptr.add(1), x1_lo);
             _mm_storeu_si128(x_ptr.add(2), x0_hi);
+
+            let mut x1_lo = _mm_loadu_si128(x_ptr.add(1));
+            let mut x1_hi = _mm_loadu_si128(x_ptr.add(3));
+            let mut y1_lo = _mm_loadu_si128(y_ptr.add(1));
+            let mut y1_hi = _mm_loadu_si128(y_ptr.add(3));
+            y1_lo = _mm_xor_si128(y1_lo, x1_lo);
+            y1_hi = _mm_xor_si128(y1_hi, x1_hi);
+            _mm_storeu_si128(y_ptr.add(1), y1_lo);
+            _mm_storeu_si128(y_ptr.add(3), y1_hi);
+            (x1_lo, x1_hi) = Self::muladd_128(x1_lo, x1_hi, y1_lo, y1_hi, lut_ssse3);
+            _mm_storeu_si128(x_ptr.add(1), x1_lo);
             _mm_storeu_si128(x_ptr.add(3), x1_hi);
         }
     }
