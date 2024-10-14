@@ -170,8 +170,7 @@ using chosen [`Engine`] and [`Rate`].
 ## Benchmarks against other crates
 
 Use `cargo run --release --example quick-comparison`
-to run few simple benchmarks against [`reed-solomon-16`], [`reed-solomon-erasure`]
-and [`reed-solomon-novelpoly`] crates.
+to run few simple benchmarks against [`reed-solomon-16`], [`reed-solomon-erasure`], [`reed-solomon-novelpoly`] and [`leopard-codec`] crates.
 
 This crate is the fastest in all cases on my AMD Ryzen 5 3600, except in the
 case of decoding with about 42 or fewer recovery shards.
@@ -181,6 +180,7 @@ which can dominate at really small data amounts.
 [`reed-solomon-16`]: https://crates.io/crates/reed-solomon-16
 [`reed-solomon-erasure`]: https://crates.io/crates/reed-solomon-erasure
 [`reed-solomon-novelpoly`]: https://crates.io/crates/reed-solomon-novelpoly
+[`leopard-codec`]: https://crates.io/crates/leopard-codec
 
 ## Running tests
 
