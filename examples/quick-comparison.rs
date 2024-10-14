@@ -23,7 +23,7 @@ fn main() {
     println!("                           µs (init)   µs (encode)   µs (decode)");
     println!("                           ---------   -----------   -----------");
 
-    for count in [32, 64, 128, 256, 512, 1024, 4 * 1024, 32 * 1024] {
+    for count in [8, 16, 32, 64, 128, 256, 512, 1024, 4 * 1024, 32 * 1024] {
         println!("\n{}:{} ({} kiB)", count, count, SHARD_BYTES / 1024);
         test_reed_solomon_simd(count);
         test_reed_solomon_16(count);
