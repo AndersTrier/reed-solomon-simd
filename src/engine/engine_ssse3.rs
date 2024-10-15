@@ -93,23 +93,55 @@ impl Default for Ssse3 {
 //
 //
 
+#[derive(Clone, Copy)]
+struct LutSsse3 {
+    t0_lo: __m128i,
+    t1_lo: __m128i,
+    t2_lo: __m128i,
+    t3_lo: __m128i,
+    t0_hi: __m128i,
+    t1_hi: __m128i,
+    t2_hi: __m128i,
+    t3_hi: __m128i,
+}
+
+impl From<&Multiply128lutT> for LutSsse3 {
+    #[inline(always)]
+    fn from(lut: &Multiply128lutT) -> Self {
+        unsafe {
+            LutSsse3 {
+                t0_lo: _mm_loadu_si128(&lut.lo[0] as *const u128 as *const __m128i),
+                t1_lo: _mm_loadu_si128(&lut.lo[1] as *const u128 as *const __m128i),
+                t2_lo: _mm_loadu_si128(&lut.lo[2] as *const u128 as *const __m128i),
+                t3_lo: _mm_loadu_si128(&lut.lo[3] as *const u128 as *const __m128i),
+                t0_hi: _mm_loadu_si128(&lut.hi[0] as *const u128 as *const __m128i),
+                t1_hi: _mm_loadu_si128(&lut.hi[1] as *const u128 as *const __m128i),
+                t2_hi: _mm_loadu_si128(&lut.hi[2] as *const u128 as *const __m128i),
+                t3_hi: _mm_loadu_si128(&lut.hi[3] as *const u128 as *const __m128i),
+            }
+        }
+    }
+}
+
 impl Ssse3 {
     #[target_feature(enable = "ssse3")]
     unsafe fn mul_ssse3(&self, x: &mut [[u8; 64]], log_m: GfElement) {
         let lut = &self.mul128[log_m as usize];
+        let lut_ssse3 = LutSsse3::from(lut);
 
         for chunk in x.iter_mut() {
             let x_ptr = chunk.as_mut_ptr() as *mut __m128i;
             unsafe {
                 let x0_lo = _mm_loadu_si128(x_ptr);
-                let x1_lo = _mm_loadu_si128(x_ptr.add(1));
                 let x0_hi = _mm_loadu_si128(x_ptr.add(2));
-                let x1_hi = _mm_loadu_si128(x_ptr.add(3));
-                let (prod0_lo, prod0_hi) = Self::mul_128(x0_lo, x0_hi, lut);
-                let (prod1_lo, prod1_hi) = Self::mul_128(x1_lo, x1_hi, lut);
+                let (prod0_lo, prod0_hi) = Self::mul_128(x0_lo, x0_hi, lut_ssse3);
                 _mm_storeu_si128(x_ptr, prod0_lo);
-                _mm_storeu_si128(x_ptr.add(1), prod1_lo);
                 _mm_storeu_si128(x_ptr.add(2), prod0_hi);
+
+                let x1_lo = _mm_loadu_si128(x_ptr.add(1));
+                let x1_hi = _mm_loadu_si128(x_ptr.add(3));
+                let (prod1_lo, prod1_hi) = Self::mul_128(x1_lo, x1_hi, lut_ssse3);
+                _mm_storeu_si128(x_ptr.add(1), prod1_lo);
                 _mm_storeu_si128(x_ptr.add(3), prod1_hi);
             }
         }
@@ -117,38 +149,28 @@ impl Ssse3 {
 
     // Impelemntation of LEO_MUL_128
     #[inline(always)]
-    fn mul_128(value_lo: __m128i, value_hi: __m128i, lut: &Multiply128lutT) -> (__m128i, __m128i) {
+    fn mul_128(value_lo: __m128i, value_hi: __m128i, lut_ssse3: LutSsse3) -> (__m128i, __m128i) {
         let mut prod_lo: __m128i;
         let mut prod_hi: __m128i;
 
         unsafe {
-            let t0_lo = _mm_loadu_si128(&lut.lo[0] as *const u128 as *const __m128i);
-            let t1_lo = _mm_loadu_si128(&lut.lo[1] as *const u128 as *const __m128i);
-            let t2_lo = _mm_loadu_si128(&lut.lo[2] as *const u128 as *const __m128i);
-            let t3_lo = _mm_loadu_si128(&lut.lo[3] as *const u128 as *const __m128i);
-
-            let t0_hi = _mm_loadu_si128(&lut.hi[0] as *const u128 as *const __m128i);
-            let t1_hi = _mm_loadu_si128(&lut.hi[1] as *const u128 as *const __m128i);
-            let t2_hi = _mm_loadu_si128(&lut.hi[2] as *const u128 as *const __m128i);
-            let t3_hi = _mm_loadu_si128(&lut.hi[3] as *const u128 as *const __m128i);
-
             let clr_mask = _mm_set1_epi8(0x0f);
 
             let data_0 = _mm_and_si128(value_lo, clr_mask);
-            prod_lo = _mm_shuffle_epi8(t0_lo, data_0);
-            prod_hi = _mm_shuffle_epi8(t0_hi, data_0);
+            prod_lo = _mm_shuffle_epi8(lut_ssse3.t0_lo, data_0);
+            prod_hi = _mm_shuffle_epi8(lut_ssse3.t0_hi, data_0);
 
             let data_1 = _mm_and_si128(_mm_srli_epi64(value_lo, 4), clr_mask);
-            prod_lo = _mm_xor_si128(prod_lo, _mm_shuffle_epi8(t1_lo, data_1));
-            prod_hi = _mm_xor_si128(prod_hi, _mm_shuffle_epi8(t1_hi, data_1));
+            prod_lo = _mm_xor_si128(prod_lo, _mm_shuffle_epi8(lut_ssse3.t1_lo, data_1));
+            prod_hi = _mm_xor_si128(prod_hi, _mm_shuffle_epi8(lut_ssse3.t1_hi, data_1));
 
             let data_0 = _mm_and_si128(value_hi, clr_mask);
-            prod_lo = _mm_xor_si128(prod_lo, _mm_shuffle_epi8(t2_lo, data_0));
-            prod_hi = _mm_xor_si128(prod_hi, _mm_shuffle_epi8(t2_hi, data_0));
+            prod_lo = _mm_xor_si128(prod_lo, _mm_shuffle_epi8(lut_ssse3.t2_lo, data_0));
+            prod_hi = _mm_xor_si128(prod_hi, _mm_shuffle_epi8(lut_ssse3.t2_hi, data_0));
 
             let data_1 = _mm_and_si128(_mm_srli_epi64(value_hi, 4), clr_mask);
-            prod_lo = _mm_xor_si128(prod_lo, _mm_shuffle_epi8(t3_lo, data_1));
-            prod_hi = _mm_xor_si128(prod_hi, _mm_shuffle_epi8(t3_hi, data_1));
+            prod_lo = _mm_xor_si128(prod_lo, _mm_shuffle_epi8(lut_ssse3.t3_lo, data_1));
+            prod_hi = _mm_xor_si128(prod_hi, _mm_shuffle_epi8(lut_ssse3.t3_hi, data_1));
         }
 
         (prod_lo, prod_hi)
@@ -162,9 +184,9 @@ impl Ssse3 {
         mut x_hi: __m128i,
         y_lo: __m128i,
         y_hi: __m128i,
-        lut: &Multiply128lutT,
+        lut_ssse3: LutSsse3,
     ) -> (__m128i, __m128i) {
-        let (prod_lo, prod_hi) = Self::mul_128(y_lo, y_hi, lut);
+        let (prod_lo, prod_hi) = Self::mul_128(y_lo, y_hi, lut_ssse3);
         unsafe {
             x_lo = _mm_xor_si128(x_lo, prod_lo);
             x_hi = _mm_xor_si128(x_hi, prod_hi);
@@ -179,37 +201,33 @@ impl Ssse3 {
 impl Ssse3 {
     // Implementation of LEO_FFTB_128
     #[inline(always)]
-    fn fftb_128(&self, x: &mut [u8; 64], y: &mut [u8; 64], log_m: GfElement) {
-        let lut = &self.mul128[log_m as usize];
+    fn fftb_128(&self, x: &mut [u8; 64], y: &mut [u8; 64], lut_ssse3: LutSsse3) {
         let x_ptr = x.as_mut_ptr() as *mut __m128i;
         let y_ptr = y.as_mut_ptr() as *mut __m128i;
+
         unsafe {
             let mut x0_lo = _mm_loadu_si128(x_ptr);
-            let mut x1_lo = _mm_loadu_si128(x_ptr.add(1));
             let mut x0_hi = _mm_loadu_si128(x_ptr.add(2));
-            let mut x1_hi = _mm_loadu_si128(x_ptr.add(3));
-
             let mut y0_lo = _mm_loadu_si128(y_ptr);
-            let mut y1_lo = _mm_loadu_si128(y_ptr.add(1));
             let mut y0_hi = _mm_loadu_si128(y_ptr.add(2));
-            let mut y1_hi = _mm_loadu_si128(y_ptr.add(3));
-
-            (x0_lo, x0_hi) = Self::muladd_128(x0_lo, x0_hi, y0_lo, y0_hi, lut);
-            (x1_lo, x1_hi) = Self::muladd_128(x1_lo, x1_hi, y1_lo, y1_hi, lut);
-
+            (x0_lo, x0_hi) = Self::muladd_128(x0_lo, x0_hi, y0_lo, y0_hi, lut_ssse3);
             _mm_storeu_si128(x_ptr, x0_lo);
-            _mm_storeu_si128(x_ptr.add(1), x1_lo);
             _mm_storeu_si128(x_ptr.add(2), x0_hi);
-            _mm_storeu_si128(x_ptr.add(3), x1_hi);
-
             y0_lo = _mm_xor_si128(y0_lo, x0_lo);
-            y1_lo = _mm_xor_si128(y1_lo, x1_lo);
             y0_hi = _mm_xor_si128(y0_hi, x0_hi);
-            y1_hi = _mm_xor_si128(y1_hi, x1_hi);
-
             _mm_storeu_si128(y_ptr, y0_lo);
-            _mm_storeu_si128(y_ptr.add(1), y1_lo);
             _mm_storeu_si128(y_ptr.add(2), y0_hi);
+
+            let mut x1_lo = _mm_loadu_si128(x_ptr.add(1));
+            let mut x1_hi = _mm_loadu_si128(x_ptr.add(3));
+            let mut y1_lo = _mm_loadu_si128(y_ptr.add(1));
+            let mut y1_hi = _mm_loadu_si128(y_ptr.add(3));
+            (x1_lo, x1_hi) = Self::muladd_128(x1_lo, x1_hi, y1_lo, y1_hi, lut_ssse3);
+            _mm_storeu_si128(x_ptr.add(1), x1_lo);
+            _mm_storeu_si128(x_ptr.add(3), x1_hi);
+            y1_lo = _mm_xor_si128(y1_lo, x1_lo);
+            y1_hi = _mm_xor_si128(y1_hi, x1_hi);
+            _mm_storeu_si128(y_ptr.add(1), y1_lo);
             _mm_storeu_si128(y_ptr.add(3), y1_hi);
         }
     }
@@ -217,8 +235,11 @@ impl Ssse3 {
     // Partial butterfly, caller must do `GF_MODULUS` check with `xor`.
     #[inline(always)]
     fn fft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
+        let lut = &self.mul128[log_m as usize];
+        let lut_ssse3 = LutSsse3::from(lut);
+
         for (x_chunk, y_chunk) in zip(x.iter_mut(), y.iter_mut()) {
-            self.fftb_128(x_chunk, y_chunk, log_m);
+            self.fftb_128(x_chunk, y_chunk, lut_ssse3);
         }
     }
 
@@ -331,46 +352,44 @@ impl Ssse3 {
 impl Ssse3 {
     // Implementation of LEO_IFFTB_128
     #[inline(always)]
-    fn ifftb_128(&self, x: &mut [u8; 64], y: &mut [u8; 64], log_m: GfElement) {
-        let lut = &self.mul128[log_m as usize];
+    fn ifftb_128(&self, x: &mut [u8; 64], y: &mut [u8; 64], lut_ssse3: LutSsse3) {
         let x_ptr = x.as_mut_ptr() as *mut __m128i;
         let y_ptr = y.as_mut_ptr() as *mut __m128i;
 
         unsafe {
             let mut x0_lo = _mm_loadu_si128(x_ptr);
-            let mut x1_lo = _mm_loadu_si128(x_ptr.add(1));
             let mut x0_hi = _mm_loadu_si128(x_ptr.add(2));
-            let mut x1_hi = _mm_loadu_si128(x_ptr.add(3));
-
             let mut y0_lo = _mm_loadu_si128(y_ptr);
-            let mut y1_lo = _mm_loadu_si128(y_ptr.add(1));
             let mut y0_hi = _mm_loadu_si128(y_ptr.add(2));
-            let mut y1_hi = _mm_loadu_si128(y_ptr.add(3));
-
             y0_lo = _mm_xor_si128(y0_lo, x0_lo);
-            y1_lo = _mm_xor_si128(y1_lo, x1_lo);
             y0_hi = _mm_xor_si128(y0_hi, x0_hi);
-            y1_hi = _mm_xor_si128(y1_hi, x1_hi);
-
             _mm_storeu_si128(y_ptr, y0_lo);
-            _mm_storeu_si128(y_ptr.add(1), y1_lo);
             _mm_storeu_si128(y_ptr.add(2), y0_hi);
-            _mm_storeu_si128(y_ptr.add(3), y1_hi);
-
-            (x0_lo, x0_hi) = Self::muladd_128(x0_lo, x0_hi, y0_lo, y0_hi, lut);
-            (x1_lo, x1_hi) = Self::muladd_128(x1_lo, x1_hi, y1_lo, y1_hi, lut);
-
+            (x0_lo, x0_hi) = Self::muladd_128(x0_lo, x0_hi, y0_lo, y0_hi, lut_ssse3);
             _mm_storeu_si128(x_ptr, x0_lo);
-            _mm_storeu_si128(x_ptr.add(1), x1_lo);
             _mm_storeu_si128(x_ptr.add(2), x0_hi);
+
+            let mut x1_lo = _mm_loadu_si128(x_ptr.add(1));
+            let mut x1_hi = _mm_loadu_si128(x_ptr.add(3));
+            let mut y1_lo = _mm_loadu_si128(y_ptr.add(1));
+            let mut y1_hi = _mm_loadu_si128(y_ptr.add(3));
+            y1_lo = _mm_xor_si128(y1_lo, x1_lo);
+            y1_hi = _mm_xor_si128(y1_hi, x1_hi);
+            _mm_storeu_si128(y_ptr.add(1), y1_lo);
+            _mm_storeu_si128(y_ptr.add(3), y1_hi);
+            (x1_lo, x1_hi) = Self::muladd_128(x1_lo, x1_hi, y1_lo, y1_hi, lut_ssse3);
+            _mm_storeu_si128(x_ptr.add(1), x1_lo);
             _mm_storeu_si128(x_ptr.add(3), x1_hi);
         }
     }
 
     #[inline(always)]
     fn ifft_butterfly_partial(&self, x: &mut [[u8; 64]], y: &mut [[u8; 64]], log_m: GfElement) {
+        let lut = &self.mul128[log_m as usize];
+        let lut_ssse3 = LutSsse3::from(lut);
+
         for (x_chunk, y_chunk) in zip(x.iter_mut(), y.iter_mut()) {
-            self.ifftb_128(x_chunk, y_chunk, log_m);
+            self.ifftb_128(x_chunk, y_chunk, lut_ssse3);
         }
     }
 
