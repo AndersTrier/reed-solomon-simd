@@ -186,31 +186,27 @@ impl Neon {
         let y_ptr: *mut u8 = y.as_mut_ptr();
         unsafe {
             let mut x0_lo = vld1q_u8(x_ptr);
-            let mut x1_lo = vld1q_u8(x_ptr.add(16));
             let mut x0_hi = vld1q_u8(x_ptr.add(16 * 2));
-            let mut x1_hi = vld1q_u8(x_ptr.add(16 * 3));
-
             let mut y0_lo = vld1q_u8(y_ptr);
-            let mut y1_lo = vld1q_u8(y_ptr.add(16));
             let mut y0_hi = vld1q_u8(y_ptr.add(16 * 2));
-            let mut y1_hi = vld1q_u8(y_ptr.add(16 * 3));
-
             (x0_lo, x0_hi) = Self::muladd_128(x0_lo, x0_hi, y0_lo, y0_hi, lut);
-            (x1_lo, x1_hi) = Self::muladd_128(x1_lo, x1_hi, y1_lo, y1_hi, lut);
-
             vst1q_u8(x_ptr, x0_lo);
-            vst1q_u8(x_ptr.add(16), x1_lo);
             vst1q_u8(x_ptr.add(16 * 2), x0_hi);
-            vst1q_u8(x_ptr.add(16 * 3), x1_hi);
-
             y0_lo = veorq_u8(y0_lo, x0_lo);
-            y1_lo = veorq_u8(y1_lo, x1_lo);
             y0_hi = veorq_u8(y0_hi, x0_hi);
-            y1_hi = veorq_u8(y1_hi, x1_hi);
-
             vst1q_u8(y_ptr, y0_lo);
-            vst1q_u8(y_ptr.add(16), y1_lo);
             vst1q_u8(y_ptr.add(16 * 2), y0_hi);
+
+            let mut x1_lo = vld1q_u8(x_ptr.add(16));
+            let mut x1_hi = vld1q_u8(x_ptr.add(16 * 3));
+            let mut y1_lo = vld1q_u8(y_ptr.add(16));
+            let mut y1_hi = vld1q_u8(y_ptr.add(16 * 3));
+            (x1_lo, x1_hi) = Self::muladd_128(x1_lo, x1_hi, y1_lo, y1_hi, lut);
+            vst1q_u8(x_ptr.add(16), x1_lo);
+            vst1q_u8(x_ptr.add(16 * 3), x1_hi);
+            y1_lo = veorq_u8(y1_lo, x1_lo);
+            y1_hi = veorq_u8(y1_hi, x1_hi);
+            vst1q_u8(y_ptr.add(16), y1_lo);
             vst1q_u8(y_ptr.add(16 * 3), y1_hi);
         }
     }
@@ -339,31 +335,27 @@ impl Neon {
 
         unsafe {
             let mut x0_lo = vld1q_u8(x_ptr);
-            let mut x1_lo = vld1q_u8(x_ptr.add(16));
             let mut x0_hi = vld1q_u8(x_ptr.add(16 * 2));
-            let mut x1_hi = vld1q_u8(x_ptr.add(16 * 3));
-
             let mut y0_lo = vld1q_u8(y_ptr);
-            let mut y1_lo = vld1q_u8(y_ptr.add(16));
             let mut y0_hi = vld1q_u8(y_ptr.add(16 * 2));
-            let mut y1_hi = vld1q_u8(y_ptr.add(16 * 3));
-
             y0_lo = veorq_u8(y0_lo, x0_lo);
-            y1_lo = veorq_u8(y1_lo, x1_lo);
             y0_hi = veorq_u8(y0_hi, x0_hi);
-            y1_hi = veorq_u8(y1_hi, x1_hi);
-
             vst1q_u8(y_ptr, y0_lo);
-            vst1q_u8(y_ptr.add(16), y1_lo);
             vst1q_u8(y_ptr.add(16 * 2), y0_hi);
-            vst1q_u8(y_ptr.add(16 * 3), y1_hi);
-
             (x0_lo, x0_hi) = Self::muladd_128(x0_lo, x0_hi, y0_lo, y0_hi, lut);
-            (x1_lo, x1_hi) = Self::muladd_128(x1_lo, x1_hi, y1_lo, y1_hi, lut);
-
             vst1q_u8(x_ptr, x0_lo);
-            vst1q_u8(x_ptr.add(16), x1_lo);
             vst1q_u8(x_ptr.add(16 * 2), x0_hi);
+
+            let mut x1_lo = vld1q_u8(x_ptr.add(16));
+            let mut x1_hi = vld1q_u8(x_ptr.add(16 * 3));
+            let mut y1_lo = vld1q_u8(y_ptr.add(16));
+            let mut y1_hi = vld1q_u8(y_ptr.add(16 * 3));
+            y1_lo = veorq_u8(y1_lo, x1_lo);
+            y1_hi = veorq_u8(y1_hi, x1_hi);
+            vst1q_u8(y_ptr.add(16), y1_lo);
+            vst1q_u8(y_ptr.add(16 * 3), y1_hi);
+            (x1_lo, x1_hi) = Self::muladd_128(x1_lo, x1_hi, y1_lo, y1_hi, lut);
+            vst1q_u8(x_ptr.add(16), x1_lo);
             vst1q_u8(x_ptr.add(16 * 3), x1_hi);
         }
     }
