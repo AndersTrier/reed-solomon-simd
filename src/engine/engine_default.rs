@@ -3,6 +3,10 @@ use crate::engine::{Engine, GfElement, NoSimd, ShardsRefMut, GF_ORDER};
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 use crate::engine::{Avx2, Ssse3};
 
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(feature = "unstable-simd")]
+use crate::engine::Avx512;
+
 #[cfg(target_arch = "aarch64")]
 use crate::engine::Neon;
 
@@ -16,9 +20,10 @@ impl DefaultEngine {
     /// Creates new [`DefaultEngine`] by chosing and initializing the underlying engine.
     ///
     /// On x86(-64) the engine is chosen in the following order of preference:
-    /// 1. [`Avx2`]
-    /// 2. [`Ssse3`]
-    /// 3. [`NoSimd`]
+    /// 1. [`Avx512`]
+    /// 2. [`Avx2`]
+    /// 3. [`Ssse3`]
+    /// 4. [`NoSimd`]
     ///
     /// On AArch64 the engine is chosen in the following order of preference:
     /// 1. [`Neon`]
@@ -26,6 +31,16 @@ impl DefaultEngine {
     pub fn new() -> Self {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
+            #[cfg(feature = "unstable-simd")]
+            {
+                if is_x86_feature_detected!("avx512f")
+                    && is_x86_feature_detected!("avx512vl")
+                    && is_x86_feature_detected!("avx512bw")
+                {
+                    return DefaultEngine(Box::new(Avx512::new()));
+                }
+            }
+
             if is_x86_feature_detected!("avx2") {
                 return DefaultEngine(Box::new(Avx2::new()));
             }
@@ -88,6 +103,16 @@ impl Engine for DefaultEngine {
     fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
+            #[cfg(feature = "unstable-simd")]
+            {
+                if is_x86_feature_detected!("avx512f")
+                    && is_x86_feature_detected!("avx512vl")
+                    && is_x86_feature_detected!("avx512bw")
+                {
+                    return Avx512::eval_poly(erasures, truncated_size);
+                }
+            }
+
             if is_x86_feature_detected!("avx2") {
                 return Avx2::eval_poly(erasures, truncated_size);
             }
