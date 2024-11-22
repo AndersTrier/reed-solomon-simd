@@ -20,7 +20,7 @@ impl DefaultEngine {
     /// 2. [`Ssse3`]
     /// 3. [`NoSimd`]
     ///
-    /// On AArch64 the engine is chosen in the following order of preference:
+    /// On `AArch64` the engine is chosen in the following order of preference:
     /// 1. [`Neon`]
     /// 2. [`NoSimd`]
     pub fn new() -> Self {

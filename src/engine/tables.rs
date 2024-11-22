@@ -51,9 +51,9 @@ pub type Mul128 = [Multiply128lutT; GF_ORDER];
 /// Elements of the Mul128 table
 #[derive(Clone, Debug)]
 pub struct Multiply128lutT {
-    /// Lower half of GfElements
+    /// Lower half of `GfElements`
     pub lo: [u128; 4],
-    /// Upper half of GfElements
+    /// Upper half of `GfElements`
     pub hi: [u128; 4],
 }
 
@@ -93,7 +93,7 @@ pub static EXP_LOG: LazyLock<ExpLog> = LazyLock::new(initialize_exp_log);
 /// Lazily initialized logarithmic Walsh transform table.
 pub static LOG_WALSH: LazyLock<Box<LogWalsh>> = LazyLock::new(initialize_log_walsh);
 
-/// Lazily initialized multiplication table for the NoSimd engine.
+/// Lazily initialized multiplication table for the `NoSimd` engine.
 pub static MUL16: LazyLock<Box<Mul16>> = LazyLock::new(initialize_mul16);
 
 /// Lazily initialized multiplication table for SIMD engines.
