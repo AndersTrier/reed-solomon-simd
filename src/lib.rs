@@ -130,22 +130,22 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::DifferentShardSize { shard_bytes, got } => {
+            Self::DifferentShardSize { shard_bytes, got } => {
                 write!(
                     f,
                     "different shard size: expected {shard_bytes} bytes, got {got} bytes"
                 )
             }
 
-            Error::DuplicateOriginalShardIndex { index } => {
+            Self::DuplicateOriginalShardIndex { index } => {
                 write!(f, "duplicate original shard index: {index}")
             }
 
-            Error::DuplicateRecoveryShardIndex { index } => {
+            Self::DuplicateRecoveryShardIndex { index } => {
                 write!(f, "duplicate recovery shard index: {index}")
             }
 
-            Error::InvalidOriginalShardIndex {
+            Self::InvalidOriginalShardIndex {
                 original_count,
                 index,
             } => {
@@ -155,7 +155,7 @@ impl fmt::Display for Error {
                 )
             }
 
-            Error::InvalidRecoveryShardIndex {
+            Self::InvalidRecoveryShardIndex {
                 recovery_count,
                 index,
             } => {
@@ -165,14 +165,14 @@ impl fmt::Display for Error {
                 )
             }
 
-            Error::InvalidShardSize { shard_bytes } => {
+            Self::InvalidShardSize { shard_bytes } => {
                 write!(
                     f,
                     "invalid shard size: {shard_bytes} bytes (must non-zero and multiple of 2)"
                 )
             }
 
-            Error::NotEnoughShards {
+            Self::NotEnoughShards {
                 original_count,
                 original_received_count,
                 recovery_received_count,
@@ -183,7 +183,7 @@ impl fmt::Display for Error {
                 )
             }
 
-            Error::TooFewOriginalShards {
+            Self::TooFewOriginalShards {
                 original_count,
                 original_received_count,
             } => {
@@ -193,14 +193,14 @@ impl fmt::Display for Error {
                 )
             }
 
-            Error::TooManyOriginalShards { original_count } => {
+            Self::TooManyOriginalShards { original_count } => {
                 write!(
                     f,
                     "too many original shards: got more than original_count ({original_count}) shards"
                 )
             }
 
-            Error::UnsupportedShardCount {
+            Self::UnsupportedShardCount {
                 original_count,
                 recovery_count,
             } => {

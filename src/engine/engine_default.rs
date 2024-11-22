@@ -27,22 +27,22 @@ impl DefaultEngine {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
             if is_x86_feature_detected!("avx2") {
-                return DefaultEngine(Box::new(Avx2::new()));
+                return Self(Box::new(Avx2::new()));
             }
 
             if is_x86_feature_detected!("ssse3") {
-                return DefaultEngine(Box::new(Ssse3::new()));
+                return Self(Box::new(Ssse3::new()));
             }
         }
 
         #[cfg(target_arch = "aarch64")]
         {
             if std::arch::is_aarch64_feature_detected!("neon") {
-                return DefaultEngine(Box::new(Neon::new()));
+                return Self(Box::new(Neon::new()));
             }
         }
 
-        DefaultEngine(Box::new(NoSimd::new()))
+        Self(Box::new(NoSimd::new()))
     }
 }
 

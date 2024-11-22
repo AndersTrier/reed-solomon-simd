@@ -109,7 +109,7 @@ impl From<&Multiply128lutT> for LutAvx2 {
     #[inline(always)]
     fn from(lut: &Multiply128lutT) -> Self {
         unsafe {
-            LutAvx2 {
+            Self {
                 t0_lo: _mm256_broadcastsi128_si256(_mm_loadu_si128(
                     std::ptr::from_ref::<u128>(&lut.lo[0]).cast::<__m128i>(),
                 )),
