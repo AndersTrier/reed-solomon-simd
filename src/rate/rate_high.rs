@@ -170,13 +170,12 @@ impl<E: Engine> RateDecoder<E> for HighRateDecoder<E> {
     }
 
     fn decode(&mut self) -> Result<DecoderResult, Error> {
-        let (mut work, original_count, recovery_count, received) =
-            if let Some(stuff) = self.work.decode_begin()? {
-                stuff
-            } else {
-                // Nothing to do, original data is complete.
-                return Ok(DecoderResult::new(&mut self.work));
-            };
+        let Some((mut work, original_count, recovery_count, received)) =
+            self.work.decode_begin()?
+        else {
+            // Nothing to do, original data is complete.
+            return Ok(DecoderResult::new(&mut self.work));
+        };
 
         let chunk_size = recovery_count.next_power_of_two();
         let original_end = chunk_size + original_count;
