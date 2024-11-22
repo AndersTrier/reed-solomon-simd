@@ -1,5 +1,16 @@
 #![doc = include_str!(concat!(env!("OUT_DIR"), "/README-rustdocified.md"))]
 #![deny(missing_docs)]
+#![warn(clippy::pedantic, clippy::cargo)]
+// Allow some lints from the pedantic category
+#![allow(
+    clippy::must_use_candidate,
+    clippy::cast_ptr_alignment,
+    clippy::inline_always,
+    clippy::missing_errors_doc,
+    clippy::cast_possible_truncation,
+    clippy::large_stack_arrays,
+    clippy::wildcard_imports
+)]
 
 use std::{collections::HashMap, fmt};
 
