@@ -211,7 +211,7 @@ impl Avx2 {
 impl Avx2 {
     // Implementation of LEO_FFTB_256
     #[inline(always)]
-    fn fftb_256(&self, x: &mut [u8; 64], y: &mut [u8; 64], lut_avx2: LutAvx2) {
+    fn fftb_256(x: &mut [u8; 64], y: &mut [u8; 64], lut_avx2: LutAvx2) {
         let x_ptr = x.as_mut_ptr().cast::<__m256i>();
         let y_ptr = y.as_mut_ptr().cast::<__m256i>();
 
@@ -242,7 +242,7 @@ impl Avx2 {
         let lut_avx2 = LutAvx2::from(lut);
 
         for (x_chunk, y_chunk) in zip(x.iter_mut(), y.iter_mut()) {
-            self.fftb_256(x_chunk, y_chunk, lut_avx2);
+            Self::fftb_256(x_chunk, y_chunk, lut_avx2);
         }
     }
 
@@ -355,7 +355,7 @@ impl Avx2 {
 impl Avx2 {
     // Implementation of LEO_IFFTB_256
     #[inline(always)]
-    fn ifftb_256(&self, x: &mut [u8; 64], y: &mut [u8; 64], lut_avx2: LutAvx2) {
+    fn ifftb_256(x: &mut [u8; 64], y: &mut [u8; 64], lut_avx2: LutAvx2) {
         let x_ptr = x.as_mut_ptr().cast::<__m256i>();
         let y_ptr = y.as_mut_ptr().cast::<__m256i>();
 
@@ -385,7 +385,7 @@ impl Avx2 {
         let lut_avx2 = LutAvx2::from(lut);
 
         for (x_chunk, y_chunk) in zip(x.iter_mut(), y.iter_mut()) {
-            self.ifftb_256(x_chunk, y_chunk, lut_avx2);
+            Self::ifftb_256(x_chunk, y_chunk, lut_avx2);
         }
     }
 
