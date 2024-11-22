@@ -267,7 +267,7 @@ where
 
     let result = encoder.encode()?;
 
-    Ok(result.recovery_iter().map(|s| s.to_vec()).collect())
+    Ok(result.recovery_iter().map(<[u8]>::to_vec).collect())
 }
 
 /// Decodes in one go using [`ReedSolomonDecoder`],
