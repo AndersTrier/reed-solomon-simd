@@ -107,8 +107,8 @@ impl Engine for Naive {
     fn mul(&self, x: &mut [[u8; 64]], log_m: GfElement) {
         for chunk in x.iter_mut() {
             for i in 0..32 {
-                let lo = chunk[i] as GfElement;
-                let hi = chunk[i + 32] as GfElement;
+                let lo = GfElement::from(chunk[i]);
+                let hi = GfElement::from(chunk[i + 32]);
                 let prod = tables::mul(lo | (hi << 8), log_m, self.exp, self.log);
                 chunk[i] = prod as u8;
                 chunk[i + 32] = (prod >> 8) as u8;
@@ -136,8 +136,8 @@ impl Naive {
 
         for (x_chunk, y_chunk) in std::iter::zip(x.iter_mut(), y.iter()) {
             for i in 0..32 {
-                let lo = y_chunk[i] as GfElement;
-                let hi = y_chunk[i + 32] as GfElement;
+                let lo = GfElement::from(y_chunk[i]);
+                let hi = GfElement::from(y_chunk[i + 32]);
                 let prod = tables::mul(lo | (hi << 8), log_m, self.exp, self.log);
                 x_chunk[i] ^= prod as u8;
                 x_chunk[i + 32] ^= (prod >> 8) as u8;
