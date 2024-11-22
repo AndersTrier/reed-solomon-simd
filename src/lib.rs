@@ -307,13 +307,13 @@ where
         if original_received_count == original_count {
             // Nothing to do, original data is complete.
             return Ok(HashMap::new());
-        } else {
-            return Err(Error::NotEnoughShards {
-                original_count,
-                original_received_count,
-                recovery_received_count: 0,
-            });
         }
+
+        return Err(Error::NotEnoughShards {
+            original_count,
+            original_received_count,
+            recovery_received_count: 0,
+        });
     };
 
     let mut decoder = ReedSolomonDecoder::new(original_count, recovery_count, shard_bytes)?;
