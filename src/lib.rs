@@ -133,17 +133,16 @@ impl fmt::Display for Error {
             Error::DifferentShardSize { shard_bytes, got } => {
                 write!(
                     f,
-                    "different shard size: expected {} bytes, got {} bytes",
-                    shard_bytes, got
+                    "different shard size: expected {shard_bytes} bytes, got {got} bytes"
                 )
             }
 
             Error::DuplicateOriginalShardIndex { index } => {
-                write!(f, "duplicate original shard index: {}", index)
+                write!(f, "duplicate original shard index: {index}")
             }
 
             Error::DuplicateRecoveryShardIndex { index } => {
-                write!(f, "duplicate recovery shard index: {}", index)
+                write!(f, "duplicate recovery shard index: {index}")
             }
 
             Error::InvalidOriginalShardIndex {
@@ -152,8 +151,7 @@ impl fmt::Display for Error {
             } => {
                 write!(
                     f,
-                    "invalid original shard index: {} >= original_count {}",
-                    index, original_count,
+                    "invalid original shard index: {index} >= original_count {original_count}",
                 )
             }
 
@@ -163,16 +161,14 @@ impl fmt::Display for Error {
             } => {
                 write!(
                     f,
-                    "invalid recovery shard index: {} >= recovery_count {}",
-                    index, recovery_count,
+                    "invalid recovery shard index: {index} >= recovery_count {recovery_count}",
                 )
             }
 
             Error::InvalidShardSize { shard_bytes } => {
                 write!(
                     f,
-                    "invalid shard size: {} bytes (must non-zero and multiple of 2)",
-                    shard_bytes
+                    "invalid shard size: {shard_bytes} bytes (must non-zero and multiple of 2)"
                 )
             }
 
@@ -183,8 +179,7 @@ impl fmt::Display for Error {
             } => {
                 write!(
                     f,
-                    "not enough shards: {} original + {} recovery < {} original_count",
-                    original_received_count, recovery_received_count, original_count,
+                    "not enough shards: {original_received_count} original + {recovery_received_count} recovery < {original_count} original_count",
                 )
             }
 
@@ -194,16 +189,14 @@ impl fmt::Display for Error {
             } => {
                 write!(
                     f,
-                    "too few original shards: got {} shards while original_count is {}",
-                    original_received_count, original_count
+                    "too few original shards: got {original_received_count} shards while original_count is {original_count}"
                 )
             }
 
             Error::TooManyOriginalShards { original_count } => {
                 write!(
                     f,
-                    "too many original shards: got more than original_count ({}) shards",
-                    original_count
+                    "too many original shards: got more than original_count ({original_count}) shards"
                 )
             }
 
@@ -213,8 +206,7 @@ impl fmt::Display for Error {
             } => {
                 write!(
                     f,
-                    "unsupported shard count: {} original shards with {} recovery shards",
-                    original_count, recovery_count
+                    "unsupported shard count: {original_count} original shards with {recovery_count} recovery shards"
                 )
             }
         }
