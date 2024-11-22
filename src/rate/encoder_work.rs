@@ -72,17 +72,17 @@ impl EncoderWork {
     }
 
     pub(crate) fn encode_begin(&mut self) -> Result<(ShardsRefMut, usize, usize), Error> {
-        if self.original_received_count != self.original_count {
-            Err(Error::TooFewOriginalShards {
-                original_count: self.original_count,
-                original_received_count: self.original_received_count,
-            })
-        } else {
+        if self.original_received_count == self.original_count {
             Ok((
                 self.shards.as_ref_mut(),
                 self.original_count,
                 self.recovery_count,
             ))
+        } else {
+            Err(Error::TooFewOriginalShards {
+                original_count: self.original_count,
+                original_received_count: self.original_received_count,
+            })
         }
     }
 
