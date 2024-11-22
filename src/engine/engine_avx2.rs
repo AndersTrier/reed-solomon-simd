@@ -111,28 +111,28 @@ impl From<&Multiply128lutT> for LutAvx2 {
         unsafe {
             LutAvx2 {
                 t0_lo: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    (&lut.lo[0] as *const u128).cast::<__m128i>(),
+                    std::ptr::from_ref::<u128>(&lut.lo[0]).cast::<__m128i>(),
                 )),
                 t1_lo: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    (&lut.lo[1] as *const u128).cast::<__m128i>(),
+                    std::ptr::from_ref::<u128>(&lut.lo[1]).cast::<__m128i>(),
                 )),
                 t2_lo: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    (&lut.lo[2] as *const u128).cast::<__m128i>(),
+                    std::ptr::from_ref::<u128>(&lut.lo[2]).cast::<__m128i>(),
                 )),
                 t3_lo: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    (&lut.lo[3] as *const u128).cast::<__m128i>(),
+                    std::ptr::from_ref::<u128>(&lut.lo[3]).cast::<__m128i>(),
                 )),
                 t0_hi: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    (&lut.hi[0] as *const u128).cast::<__m128i>(),
+                    std::ptr::from_ref::<u128>(&lut.hi[0]).cast::<__m128i>(),
                 )),
                 t1_hi: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    (&lut.hi[1] as *const u128).cast::<__m128i>(),
+                    std::ptr::from_ref::<u128>(&lut.hi[1]).cast::<__m128i>(),
                 )),
                 t2_hi: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    (&lut.hi[2] as *const u128).cast::<__m128i>(),
+                    std::ptr::from_ref::<u128>(&lut.hi[2]).cast::<__m128i>(),
                 )),
                 t3_hi: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    (&lut.hi[3] as *const u128).cast::<__m128i>(),
+                    std::ptr::from_ref::<u128>(&lut.hi[3]).cast::<__m128i>(),
                 )),
             }
         }

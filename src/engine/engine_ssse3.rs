@@ -122,15 +122,15 @@ impl Ssse3 {
         let mut prod_hi: __m128i;
 
         unsafe {
-            let t0_lo = _mm_loadu_si128((&lut.lo[0] as *const u128).cast::<__m128i>());
-            let t1_lo = _mm_loadu_si128((&lut.lo[1] as *const u128).cast::<__m128i>());
-            let t2_lo = _mm_loadu_si128((&lut.lo[2] as *const u128).cast::<__m128i>());
-            let t3_lo = _mm_loadu_si128((&lut.lo[3] as *const u128).cast::<__m128i>());
+            let t0_lo = _mm_loadu_si128(std::ptr::from_ref::<u128>(&lut.lo[0]).cast::<__m128i>());
+            let t1_lo = _mm_loadu_si128(std::ptr::from_ref::<u128>(&lut.lo[1]).cast::<__m128i>());
+            let t2_lo = _mm_loadu_si128(std::ptr::from_ref::<u128>(&lut.lo[2]).cast::<__m128i>());
+            let t3_lo = _mm_loadu_si128(std::ptr::from_ref::<u128>(&lut.lo[3]).cast::<__m128i>());
 
-            let t0_hi = _mm_loadu_si128((&lut.hi[0] as *const u128).cast::<__m128i>());
-            let t1_hi = _mm_loadu_si128((&lut.hi[1] as *const u128).cast::<__m128i>());
-            let t2_hi = _mm_loadu_si128((&lut.hi[2] as *const u128).cast::<__m128i>());
-            let t3_hi = _mm_loadu_si128((&lut.hi[3] as *const u128).cast::<__m128i>());
+            let t0_hi = _mm_loadu_si128(std::ptr::from_ref::<u128>(&lut.hi[0]).cast::<__m128i>());
+            let t1_hi = _mm_loadu_si128(std::ptr::from_ref::<u128>(&lut.hi[1]).cast::<__m128i>());
+            let t2_hi = _mm_loadu_si128(std::ptr::from_ref::<u128>(&lut.hi[2]).cast::<__m128i>());
+            let t3_hi = _mm_loadu_si128(std::ptr::from_ref::<u128>(&lut.hi[3]).cast::<__m128i>());
 
             let clr_mask = _mm_set1_epi8(0x0f);
 
