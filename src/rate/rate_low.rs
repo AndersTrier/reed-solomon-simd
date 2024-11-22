@@ -99,7 +99,7 @@ impl<E: Engine> RateEncoder<E> for LowRateEncoder<E> {
     ) -> Result<Self, Error> {
         let mut work = work.unwrap_or_default();
         Self::reset_work(original_count, recovery_count, shard_bytes, &mut work)?;
-        Ok(Self { work, engine })
+        Ok(Self { engine, work })
     }
 
     fn reset(
@@ -266,7 +266,7 @@ impl<E: Engine> RateDecoder<E> for LowRateDecoder<E> {
     ) -> Result<Self, Error> {
         let mut work = work.unwrap_or_default();
         Self::reset_work(original_count, recovery_count, shard_bytes, &mut work)?;
-        Ok(Self { work, engine })
+        Ok(Self { engine, work })
     }
 
     fn reset(
