@@ -123,15 +123,15 @@ impl Neon {
         let mut prod_hi: uint8x16_t;
 
         unsafe {
-            let t0_lo = vld1q_u8(&lut.lo[0] as *const u128 as *const u8);
-            let t1_lo = vld1q_u8(&lut.lo[1] as *const u128 as *const u8);
-            let t2_lo = vld1q_u8(&lut.lo[2] as *const u128 as *const u8);
-            let t3_lo = vld1q_u8(&lut.lo[3] as *const u128 as *const u8);
+            let t0_lo = vld1q_u8((&lut.lo[0] as *const u128).cast::<u8>());
+            let t1_lo = vld1q_u8((&lut.lo[1] as *const u128).cast::<u8>());
+            let t2_lo = vld1q_u8((&lut.lo[2] as *const u128).cast::<u8>());
+            let t3_lo = vld1q_u8((&lut.lo[3] as *const u128).cast::<u8>());
 
-            let t0_hi = vld1q_u8(&lut.hi[0] as *const u128 as *const u8);
-            let t1_hi = vld1q_u8(&lut.hi[1] as *const u128 as *const u8);
-            let t2_hi = vld1q_u8(&lut.hi[2] as *const u128 as *const u8);
-            let t3_hi = vld1q_u8(&lut.hi[3] as *const u128 as *const u8);
+            let t0_hi = vld1q_u8((&lut.hi[0] as *const u128).cast::<u8>());
+            let t1_hi = vld1q_u8((&lut.hi[1] as *const u128).cast::<u8>());
+            let t2_hi = vld1q_u8((&lut.hi[2] as *const u128).cast::<u8>());
+            let t3_hi = vld1q_u8((&lut.hi[3] as *const u128).cast::<u8>());
 
             let clr_mask = vdupq_n_u8(0x0f);
 

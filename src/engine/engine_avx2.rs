@@ -111,28 +111,28 @@ impl From<&Multiply128lutT> for LutAvx2 {
         unsafe {
             LutAvx2 {
                 t0_lo: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    &lut.lo[0] as *const u128 as *const __m128i,
+                    (&lut.lo[0] as *const u128).cast::<__m128i>(),
                 )),
                 t1_lo: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    &lut.lo[1] as *const u128 as *const __m128i,
+                    (&lut.lo[1] as *const u128).cast::<__m128i>(),
                 )),
                 t2_lo: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    &lut.lo[2] as *const u128 as *const __m128i,
+                    (&lut.lo[2] as *const u128).cast::<__m128i>(),
                 )),
                 t3_lo: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    &lut.lo[3] as *const u128 as *const __m128i,
+                    (&lut.lo[3] as *const u128).cast::<__m128i>(),
                 )),
                 t0_hi: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    &lut.hi[0] as *const u128 as *const __m128i,
+                    (&lut.hi[0] as *const u128).cast::<__m128i>(),
                 )),
                 t1_hi: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    &lut.hi[1] as *const u128 as *const __m128i,
+                    (&lut.hi[1] as *const u128).cast::<__m128i>(),
                 )),
                 t2_hi: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    &lut.hi[2] as *const u128 as *const __m128i,
+                    (&lut.hi[2] as *const u128).cast::<__m128i>(),
                 )),
                 t3_hi: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    &lut.hi[3] as *const u128 as *const __m128i,
+                    (&lut.hi[3] as *const u128).cast::<__m128i>(),
                 )),
             }
         }
@@ -146,7 +146,7 @@ impl Avx2 {
         let lut_avx2 = LutAvx2::from(lut);
 
         for chunk in x.iter_mut() {
-            let x_ptr = chunk.as_mut_ptr() as *mut __m256i;
+            let x_ptr = chunk.as_mut_ptr().cast::<__m256i>();
             unsafe {
                 let x_lo = _mm256_loadu_si256(x_ptr);
                 let x_hi = _mm256_loadu_si256(x_ptr.add(1));
@@ -212,8 +212,8 @@ impl Avx2 {
     // Implementation of LEO_FFTB_256
     #[inline(always)]
     fn fftb_256(&self, x: &mut [u8; 64], y: &mut [u8; 64], lut_avx2: LutAvx2) {
-        let x_ptr = x.as_mut_ptr() as *mut __m256i;
-        let y_ptr = y.as_mut_ptr() as *mut __m256i;
+        let x_ptr = x.as_mut_ptr().cast::<__m256i>();
+        let y_ptr = y.as_mut_ptr().cast::<__m256i>();
 
         unsafe {
             let mut x_lo = _mm256_loadu_si256(x_ptr);
@@ -356,8 +356,8 @@ impl Avx2 {
     // Implementation of LEO_IFFTB_256
     #[inline(always)]
     fn ifftb_256(&self, x: &mut [u8; 64], y: &mut [u8; 64], lut_avx2: LutAvx2) {
-        let x_ptr = x.as_mut_ptr() as *mut __m256i;
-        let y_ptr = y.as_mut_ptr() as *mut __m256i;
+        let x_ptr = x.as_mut_ptr().cast::<__m256i>();
+        let y_ptr = y.as_mut_ptr().cast::<__m256i>();
 
         unsafe {
             let mut x_lo = _mm256_loadu_si256(x_ptr);

@@ -99,7 +99,7 @@ impl Ssse3 {
         let lut = &self.mul128[log_m as usize];
 
         for chunk in x.iter_mut() {
-            let x_ptr = chunk.as_mut_ptr() as *mut __m128i;
+            let x_ptr = chunk.as_mut_ptr().cast::<__m128i>();
             unsafe {
                 let x0_lo = _mm_loadu_si128(x_ptr);
                 let x1_lo = _mm_loadu_si128(x_ptr.add(1));
@@ -122,15 +122,15 @@ impl Ssse3 {
         let mut prod_hi: __m128i;
 
         unsafe {
-            let t0_lo = _mm_loadu_si128(&lut.lo[0] as *const u128 as *const __m128i);
-            let t1_lo = _mm_loadu_si128(&lut.lo[1] as *const u128 as *const __m128i);
-            let t2_lo = _mm_loadu_si128(&lut.lo[2] as *const u128 as *const __m128i);
-            let t3_lo = _mm_loadu_si128(&lut.lo[3] as *const u128 as *const __m128i);
+            let t0_lo = _mm_loadu_si128((&lut.lo[0] as *const u128).cast::<__m128i>());
+            let t1_lo = _mm_loadu_si128((&lut.lo[1] as *const u128).cast::<__m128i>());
+            let t2_lo = _mm_loadu_si128((&lut.lo[2] as *const u128).cast::<__m128i>());
+            let t3_lo = _mm_loadu_si128((&lut.lo[3] as *const u128).cast::<__m128i>());
 
-            let t0_hi = _mm_loadu_si128(&lut.hi[0] as *const u128 as *const __m128i);
-            let t1_hi = _mm_loadu_si128(&lut.hi[1] as *const u128 as *const __m128i);
-            let t2_hi = _mm_loadu_si128(&lut.hi[2] as *const u128 as *const __m128i);
-            let t3_hi = _mm_loadu_si128(&lut.hi[3] as *const u128 as *const __m128i);
+            let t0_hi = _mm_loadu_si128((&lut.hi[0] as *const u128).cast::<__m128i>());
+            let t1_hi = _mm_loadu_si128((&lut.hi[1] as *const u128).cast::<__m128i>());
+            let t2_hi = _mm_loadu_si128((&lut.hi[2] as *const u128).cast::<__m128i>());
+            let t3_hi = _mm_loadu_si128((&lut.hi[3] as *const u128).cast::<__m128i>());
 
             let clr_mask = _mm_set1_epi8(0x0f);
 
@@ -181,8 +181,8 @@ impl Ssse3 {
     #[inline(always)]
     fn fftb_128(&self, x: &mut [u8; 64], y: &mut [u8; 64], log_m: GfElement) {
         let lut = &self.mul128[log_m as usize];
-        let x_ptr = x.as_mut_ptr() as *mut __m128i;
-        let y_ptr = y.as_mut_ptr() as *mut __m128i;
+        let x_ptr = x.as_mut_ptr().cast::<__m128i>();
+        let y_ptr = y.as_mut_ptr().cast::<__m128i>();
         unsafe {
             let mut x0_lo = _mm_loadu_si128(x_ptr);
             let mut x1_lo = _mm_loadu_si128(x_ptr.add(1));
@@ -333,8 +333,8 @@ impl Ssse3 {
     #[inline(always)]
     fn ifftb_128(&self, x: &mut [u8; 64], y: &mut [u8; 64], log_m: GfElement) {
         let lut = &self.mul128[log_m as usize];
-        let x_ptr = x.as_mut_ptr() as *mut __m128i;
-        let y_ptr = y.as_mut_ptr() as *mut __m128i;
+        let x_ptr = x.as_mut_ptr().cast::<__m128i>();
+        let y_ptr = y.as_mut_ptr().cast::<__m128i>();
 
         unsafe {
             let mut x0_lo = _mm_loadu_si128(x_ptr);
