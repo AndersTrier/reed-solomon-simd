@@ -296,7 +296,7 @@ impl Neon {
                 let log_m23 = self.skew[base + dist * 2];
 
                 for i in r..r + dist {
-                    self.fft_butterfly_two_layers(data, pos + i, dist, log_m01, log_m23, log_m02)
+                    self.fft_butterfly_two_layers(data, pos + i, dist, log_m01, log_m23, log_m02);
                 }
 
                 r += dist4;
@@ -317,7 +317,7 @@ impl Neon {
                 if log_m == GF_MODULUS {
                     utils::xor(y, x);
                 } else {
-                    self.fft_butterfly_partial(x, y, log_m)
+                    self.fft_butterfly_partial(x, y, log_m);
                 }
 
                 r += 2;
@@ -422,7 +422,7 @@ impl Neon {
         skew_delta: usize,
     ) {
         // Drop unsafe privileges
-        self.ifft_private(data, pos, size, truncated_size, skew_delta)
+        self.ifft_private(data, pos, size, truncated_size, skew_delta);
     }
 
     #[inline(always)]
@@ -448,7 +448,7 @@ impl Neon {
                 let log_m23 = self.skew[base + dist * 2];
 
                 for i in r..r + dist {
-                    self.ifft_butterfly_two_layers(data, pos + i, dist, log_m01, log_m23, log_m02)
+                    self.ifft_butterfly_two_layers(data, pos + i, dist, log_m01, log_m23, log_m02);
                 }
 
                 r += dist4;
@@ -483,7 +483,7 @@ impl Neon {
 impl Neon {
     #[target_feature(enable = "neon")]
     unsafe fn eval_poly_neon(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        utils::eval_poly(erasures, truncated_size)
+        utils::eval_poly(erasures, truncated_size);
     }
 }
 

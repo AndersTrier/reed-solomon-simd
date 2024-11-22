@@ -156,7 +156,7 @@ pub trait Engine {
     where
         Self: Sized,
     {
-        utils::eval_poly(erasures, truncated_size)
+        utils::eval_poly(erasures, truncated_size);
     }
 }
 

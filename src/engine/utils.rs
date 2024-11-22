@@ -80,7 +80,7 @@ pub(crate) fn fft_skew_end(
     size: usize,
     truncated_size: usize,
 ) {
-    engine.fft(data, pos, size, truncated_size, pos + size)
+    engine.fft(data, pos, size, truncated_size, pos + size);
 }
 
 /// IFFT with `skew_delta = pos + size`.
@@ -92,7 +92,7 @@ pub(crate) fn ifft_skew_end(
     size: usize,
     truncated_size: usize,
 ) {
-    engine.ifft(data, pos, size, truncated_size, pos + size)
+    engine.ifft(data, pos, size, truncated_size, pos + size);
 }
 
 // Formal derivative.

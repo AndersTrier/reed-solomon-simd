@@ -74,7 +74,7 @@ impl<'a> Iterator for RestoredOriginal<'a> {
                     self.next_index = index + 1;
                     return Some((index, original));
                 }
-                index += 1
+                index += 1;
             }
             self.ended = true;
             None

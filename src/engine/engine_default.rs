@@ -67,7 +67,7 @@ impl Engine for DefaultEngine {
         truncated_size: usize,
         skew_delta: usize,
     ) {
-        self.0.fft(data, pos, size, truncated_size, skew_delta)
+        self.0.fft(data, pos, size, truncated_size, skew_delta);
     }
 
     fn ifft(
@@ -78,11 +78,11 @@ impl Engine for DefaultEngine {
         truncated_size: usize,
         skew_delta: usize,
     ) {
-        self.0.ifft(data, pos, size, truncated_size, skew_delta)
+        self.0.ifft(data, pos, size, truncated_size, skew_delta);
     }
 
     fn mul(&self, x: &mut [[u8; 64]], log_m: GfElement) {
-        self.0.mul(x, log_m)
+        self.0.mul(x, log_m);
     }
 
     fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
@@ -104,6 +104,6 @@ impl Engine for DefaultEngine {
             }
         }
 
-        NoSimd::eval_poly(erasures, truncated_size)
+        NoSimd::eval_poly(erasures, truncated_size);
     }
 }
