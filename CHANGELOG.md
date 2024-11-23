@@ -30,3 +30,6 @@
 - Improved types for internal data structures. This raises the Minimum Supported Rust Version (MSRV) to 1.80.
 - Faster `NoSimd` engine.
 - Removed dependencies: bytemuck and once\_cell.
+
+## 3.0.1 - 2024-11-23
+- AVX2: Up to 20% higher throughput in encoding and up to 10% faster decoding.
