@@ -182,7 +182,7 @@ impl NoSimd {
                 let log_m23 = self.skew[base + dist * 2];
 
                 for i in r..r + dist {
-                    self.fft_butterfly_two_layers(data, pos + i, dist, log_m01, log_m23, log_m02)
+                    self.fft_butterfly_two_layers(data, pos + i, dist, log_m01, log_m23, log_m02);
                 }
 
                 r += dist4;
@@ -203,7 +203,7 @@ impl NoSimd {
                 if log_m == GF_MODULUS {
                     utils::xor(y, x);
                 } else {
-                    self.fft_butterfly_partial(x, y, log_m)
+                    self.fft_butterfly_partial(x, y, log_m);
                 }
 
                 r += 2;
@@ -283,7 +283,7 @@ impl NoSimd {
                 let log_m23 = self.skew[base + dist * 2];
 
                 for i in r..r + dist {
-                    self.ifft_butterfly_two_layers(data, pos + i, dist, log_m01, log_m23, log_m02)
+                    self.ifft_butterfly_two_layers(data, pos + i, dist, log_m01, log_m23, log_m02);
                 }
 
                 r += dist4;

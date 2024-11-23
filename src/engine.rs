@@ -21,7 +21,7 @@
 //! - [`Ssse3`]
 //!     - Optimized engine that takes advantage of the x86(-64) SSSE3 SIMD instructions.
 //! - [`Neon`]
-//!     - Optimized engine that takes advantage of the AArch64 Neon SIMD instructions.
+//!     - Optimized engine that takes advantage of the `AArch64` Neon SIMD instructions.
 //! - [`DefaultEngine`]
 //!     - Default engine which is used when no specific engine is given.
 //!     - Automatically selects best engine at runtime.
@@ -156,7 +156,7 @@ pub trait Engine {
     where
         Self: Sized,
     {
-        utils::eval_poly(erasures, truncated_size)
+        utils::eval_poly(erasures, truncated_size);
     }
 }
 

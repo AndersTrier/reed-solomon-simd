@@ -1,5 +1,16 @@
 #![doc = include_str!(concat!(env!("OUT_DIR"), "/README-rustdocified.md"))]
 #![deny(missing_docs)]
+#![warn(clippy::pedantic, clippy::cargo)]
+// Allow some lints from the pedantic category
+#![allow(
+    clippy::must_use_candidate,
+    clippy::cast_ptr_alignment,
+    clippy::inline_always,
+    clippy::missing_errors_doc,
+    clippy::cast_possible_truncation,
+    clippy::large_stack_arrays,
+    clippy::wildcard_imports
+)]
 
 use std::{collections::HashMap, fmt};
 
@@ -130,91 +141,83 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::DifferentShardSize { shard_bytes, got } => {
+            Self::DifferentShardSize { shard_bytes, got } => {
                 write!(
                     f,
-                    "different shard size: expected {} bytes, got {} bytes",
-                    shard_bytes, got
+                    "different shard size: expected {shard_bytes} bytes, got {got} bytes"
                 )
             }
 
-            Error::DuplicateOriginalShardIndex { index } => {
-                write!(f, "duplicate original shard index: {}", index)
+            Self::DuplicateOriginalShardIndex { index } => {
+                write!(f, "duplicate original shard index: {index}")
             }
 
-            Error::DuplicateRecoveryShardIndex { index } => {
-                write!(f, "duplicate recovery shard index: {}", index)
+            Self::DuplicateRecoveryShardIndex { index } => {
+                write!(f, "duplicate recovery shard index: {index}")
             }
 
-            Error::InvalidOriginalShardIndex {
+            Self::InvalidOriginalShardIndex {
                 original_count,
                 index,
             } => {
                 write!(
                     f,
-                    "invalid original shard index: {} >= original_count {}",
-                    index, original_count,
+                    "invalid original shard index: {index} >= original_count {original_count}",
                 )
             }
 
-            Error::InvalidRecoveryShardIndex {
+            Self::InvalidRecoveryShardIndex {
                 recovery_count,
                 index,
             } => {
                 write!(
                     f,
-                    "invalid recovery shard index: {} >= recovery_count {}",
-                    index, recovery_count,
+                    "invalid recovery shard index: {index} >= recovery_count {recovery_count}",
                 )
             }
 
-            Error::InvalidShardSize { shard_bytes } => {
+            Self::InvalidShardSize { shard_bytes } => {
                 write!(
                     f,
-                    "invalid shard size: {} bytes (must non-zero and multiple of 2)",
-                    shard_bytes
+                    "invalid shard size: {shard_bytes} bytes (must non-zero and multiple of 2)"
                 )
             }
 
-            Error::NotEnoughShards {
+            Self::NotEnoughShards {
                 original_count,
                 original_received_count,
                 recovery_received_count,
             } => {
                 write!(
                     f,
-                    "not enough shards: {} original + {} recovery < {} original_count",
-                    original_received_count, recovery_received_count, original_count,
+                    "not enough shards: {original_received_count} original + {recovery_received_count} recovery < {original_count} original_count",
                 )
             }
 
-            Error::TooFewOriginalShards {
+            Self::TooFewOriginalShards {
                 original_count,
                 original_received_count,
             } => {
                 write!(
                     f,
-                    "too few original shards: got {} shards while original_count is {}",
-                    original_received_count, original_count
+                    "too few original shards: got {original_received_count} shards while original_count is {original_count}"
                 )
             }
 
-            Error::TooManyOriginalShards { original_count } => {
+            Self::TooManyOriginalShards { original_count } => {
                 write!(
                     f,
-                    "too many original shards: got more than original_count ({}) shards",
-                    original_count
+                    "too many original shards: got more than original_count ({original_count}) shards"
                 )
             }
 
-            Error::UnsupportedShardCount {
+            Self::UnsupportedShardCount {
                 original_count,
                 recovery_count,
             } => {
                 write!(
                     f,
-                    "unsupported shard count: {} original shards with {} recovery shards",
-                    original_count, recovery_count
+                    "unsupported shard count: {original_count} original shards with {recovery_count} recovery shards"
                 )
             }
         }
@@ -275,7 +278,7 @@ where
 
     let result = encoder.encode()?;
 
-    Ok(result.recovery_iter().map(|s| s.to_vec()).collect())
+    Ok(result.recovery_iter().map(<[u8]>::to_vec).collect())
 }
 
 /// Decodes in one go using [`ReedSolomonDecoder`],
@@ -315,13 +318,13 @@ where
         if original_received_count == original_count {
             // Nothing to do, original data is complete.
             return Ok(HashMap::new());
-        } else {
-            return Err(Error::NotEnoughShards {
-                original_count,
-                original_received_count,
-                recovery_received_count: 0,
-            });
         }
+
+        return Err(Error::NotEnoughShards {
+            original_count,
+            original_received_count,
+            recovery_received_count: 0,
+        });
     };
 
     let mut decoder = ReedSolomonDecoder::new(original_count, recovery_count, shard_bytes)?;

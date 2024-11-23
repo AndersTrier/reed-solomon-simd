@@ -109,30 +109,30 @@ impl From<&Multiply128lutT> for LutAvx2 {
     #[inline(always)]
     fn from(lut: &Multiply128lutT) -> Self {
         unsafe {
-            LutAvx2 {
+            Self {
                 t0_lo: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    &lut.lo[0] as *const u128 as *const __m128i,
+                    std::ptr::from_ref::<u128>(&lut.lo[0]).cast::<__m128i>(),
                 )),
                 t1_lo: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    &lut.lo[1] as *const u128 as *const __m128i,
+                    std::ptr::from_ref::<u128>(&lut.lo[1]).cast::<__m128i>(),
                 )),
                 t2_lo: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    &lut.lo[2] as *const u128 as *const __m128i,
+                    std::ptr::from_ref::<u128>(&lut.lo[2]).cast::<__m128i>(),
                 )),
                 t3_lo: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    &lut.lo[3] as *const u128 as *const __m128i,
+                    std::ptr::from_ref::<u128>(&lut.lo[3]).cast::<__m128i>(),
                 )),
                 t0_hi: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    &lut.hi[0] as *const u128 as *const __m128i,
+                    std::ptr::from_ref::<u128>(&lut.hi[0]).cast::<__m128i>(),
                 )),
                 t1_hi: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    &lut.hi[1] as *const u128 as *const __m128i,
+                    std::ptr::from_ref::<u128>(&lut.hi[1]).cast::<__m128i>(),
                 )),
                 t2_hi: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    &lut.hi[2] as *const u128 as *const __m128i,
+                    std::ptr::from_ref::<u128>(&lut.hi[2]).cast::<__m128i>(),
                 )),
                 t3_hi: _mm256_broadcastsi128_si256(_mm_loadu_si128(
-                    &lut.hi[3] as *const u128 as *const __m128i,
+                    std::ptr::from_ref::<u128>(&lut.hi[3]).cast::<__m128i>(),
                 )),
             }
         }
@@ -146,7 +146,7 @@ impl Avx2 {
         let lut_avx2 = LutAvx2::from(lut);
 
         for chunk in x.iter_mut() {
-            let x_ptr = chunk.as_mut_ptr() as *mut __m256i;
+            let x_ptr = chunk.as_mut_ptr().cast::<__m256i>();
             unsafe {
                 let x_lo = _mm256_loadu_si256(x_ptr);
                 let x_hi = _mm256_loadu_si256(x_ptr.add(1));
@@ -211,9 +211,9 @@ impl Avx2 {
 impl Avx2 {
     // Implementation of LEO_FFTB_256
     #[inline(always)]
-    fn fftb_256(&self, x: &mut [u8; 64], y: &mut [u8; 64], lut_avx2: LutAvx2) {
-        let x_ptr = x.as_mut_ptr() as *mut __m256i;
-        let y_ptr = y.as_mut_ptr() as *mut __m256i;
+    fn fftb_256(x: &mut [u8; 64], y: &mut [u8; 64], lut_avx2: LutAvx2) {
+        let x_ptr = x.as_mut_ptr().cast::<__m256i>();
+        let y_ptr = y.as_mut_ptr().cast::<__m256i>();
 
         unsafe {
             let mut x_lo = _mm256_loadu_si256(x_ptr);
@@ -242,7 +242,7 @@ impl Avx2 {
         let lut_avx2 = LutAvx2::from(lut);
 
         for (x_chunk, y_chunk) in zip(x.iter_mut(), y.iter_mut()) {
-            self.fftb_256(x_chunk, y_chunk, lut_avx2);
+            Self::fftb_256(x_chunk, y_chunk, lut_avx2);
         }
     }
 
@@ -319,7 +319,7 @@ impl Avx2 {
                 let log_m23 = self.skew[base + dist * 2];
 
                 for i in r..r + dist {
-                    self.fft_butterfly_two_layers(data, pos + i, dist, log_m01, log_m23, log_m02)
+                    self.fft_butterfly_two_layers(data, pos + i, dist, log_m01, log_m23, log_m02);
                 }
 
                 r += dist4;
@@ -340,7 +340,7 @@ impl Avx2 {
                 if log_m == GF_MODULUS {
                     utils::xor(y, x);
                 } else {
-                    self.fft_butterfly_partial(x, y, log_m)
+                    self.fft_butterfly_partial(x, y, log_m);
                 }
 
                 r += 2;
@@ -355,9 +355,9 @@ impl Avx2 {
 impl Avx2 {
     // Implementation of LEO_IFFTB_256
     #[inline(always)]
-    fn ifftb_256(&self, x: &mut [u8; 64], y: &mut [u8; 64], lut_avx2: LutAvx2) {
-        let x_ptr = x.as_mut_ptr() as *mut __m256i;
-        let y_ptr = y.as_mut_ptr() as *mut __m256i;
+    fn ifftb_256(x: &mut [u8; 64], y: &mut [u8; 64], lut_avx2: LutAvx2) {
+        let x_ptr = x.as_mut_ptr().cast::<__m256i>();
+        let y_ptr = y.as_mut_ptr().cast::<__m256i>();
 
         unsafe {
             let mut x_lo = _mm256_loadu_si256(x_ptr);
@@ -385,7 +385,7 @@ impl Avx2 {
         let lut_avx2 = LutAvx2::from(lut);
 
         for (x_chunk, y_chunk) in zip(x.iter_mut(), y.iter_mut()) {
-            self.ifftb_256(x_chunk, y_chunk, lut_avx2);
+            Self::ifftb_256(x_chunk, y_chunk, lut_avx2);
         }
     }
 
@@ -436,7 +436,7 @@ impl Avx2 {
         skew_delta: usize,
     ) {
         // Drop unsafe privileges
-        self.ifft_private(data, pos, size, truncated_size, skew_delta)
+        self.ifft_private(data, pos, size, truncated_size, skew_delta);
     }
 
     #[inline(always)]
@@ -462,7 +462,7 @@ impl Avx2 {
                 let log_m23 = self.skew[base + dist * 2];
 
                 for i in r..r + dist {
-                    self.ifft_butterfly_two_layers(data, pos + i, dist, log_m01, log_m23, log_m02)
+                    self.ifft_butterfly_two_layers(data, pos + i, dist, log_m01, log_m23, log_m02);
                 }
 
                 r += dist4;
@@ -497,7 +497,7 @@ impl Avx2 {
 impl Avx2 {
     #[target_feature(enable = "avx2")]
     unsafe fn eval_poly_avx2(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        utils::eval_poly(erasures, truncated_size)
+        utils::eval_poly(erasures, truncated_size);
     }
 }
 

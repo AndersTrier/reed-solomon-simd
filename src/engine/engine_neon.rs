@@ -123,15 +123,15 @@ impl Neon {
         let mut prod_hi: uint8x16_t;
 
         unsafe {
-            let t0_lo = vld1q_u8(&lut.lo[0] as *const u128 as *const u8);
-            let t1_lo = vld1q_u8(&lut.lo[1] as *const u128 as *const u8);
-            let t2_lo = vld1q_u8(&lut.lo[2] as *const u128 as *const u8);
-            let t3_lo = vld1q_u8(&lut.lo[3] as *const u128 as *const u8);
+            let t0_lo = vld1q_u8(std::ptr::from_ref::<u128>(&lut.lo[0]).cast::<u8>());
+            let t1_lo = vld1q_u8(std::ptr::from_ref::<u128>(&lut.lo[1]).cast::<u8>());
+            let t2_lo = vld1q_u8(std::ptr::from_ref::<u128>(&lut.lo[2]).cast::<u8>());
+            let t3_lo = vld1q_u8(std::ptr::from_ref::<u128>(&lut.lo[3]).cast::<u8>());
 
-            let t0_hi = vld1q_u8(&lut.hi[0] as *const u128 as *const u8);
-            let t1_hi = vld1q_u8(&lut.hi[1] as *const u128 as *const u8);
-            let t2_hi = vld1q_u8(&lut.hi[2] as *const u128 as *const u8);
-            let t3_hi = vld1q_u8(&lut.hi[3] as *const u128 as *const u8);
+            let t0_hi = vld1q_u8(std::ptr::from_ref::<u128>(&lut.hi[0]).cast::<u8>());
+            let t1_hi = vld1q_u8(std::ptr::from_ref::<u128>(&lut.hi[1]).cast::<u8>());
+            let t2_hi = vld1q_u8(std::ptr::from_ref::<u128>(&lut.hi[2]).cast::<u8>());
+            let t3_hi = vld1q_u8(std::ptr::from_ref::<u128>(&lut.hi[3]).cast::<u8>());
 
             let clr_mask = vdupq_n_u8(0x0f);
 
@@ -296,7 +296,7 @@ impl Neon {
                 let log_m23 = self.skew[base + dist * 2];
 
                 for i in r..r + dist {
-                    self.fft_butterfly_two_layers(data, pos + i, dist, log_m01, log_m23, log_m02)
+                    self.fft_butterfly_two_layers(data, pos + i, dist, log_m01, log_m23, log_m02);
                 }
 
                 r += dist4;
@@ -317,7 +317,7 @@ impl Neon {
                 if log_m == GF_MODULUS {
                     utils::xor(y, x);
                 } else {
-                    self.fft_butterfly_partial(x, y, log_m)
+                    self.fft_butterfly_partial(x, y, log_m);
                 }
 
                 r += 2;
@@ -422,7 +422,7 @@ impl Neon {
         skew_delta: usize,
     ) {
         // Drop unsafe privileges
-        self.ifft_private(data, pos, size, truncated_size, skew_delta)
+        self.ifft_private(data, pos, size, truncated_size, skew_delta);
     }
 
     #[inline(always)]
@@ -448,7 +448,7 @@ impl Neon {
                 let log_m23 = self.skew[base + dist * 2];
 
                 for i in r..r + dist {
-                    self.ifft_butterfly_two_layers(data, pos + i, dist, log_m01, log_m23, log_m02)
+                    self.ifft_butterfly_two_layers(data, pos + i, dist, log_m01, log_m23, log_m02);
                 }
 
                 r += dist4;
@@ -483,7 +483,7 @@ impl Neon {
 impl Neon {
     #[target_feature(enable = "neon")]
     unsafe fn eval_poly_neon(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        utils::eval_poly(erasures, truncated_size)
+        utils::eval_poly(erasures, truncated_size);
     }
 }
 
