@@ -144,4 +144,30 @@ mod tests {
         assert!(iter.next().is_none());
         test_util::assert_hash(all, test_util::LOW_2_3);
     }
+
+    #[test]
+    fn encoder_result_size_hint() {
+        let original = test_util::generate_original(2, 1024, 123);
+        let mut encoder = ReedSolomonEncoder::new(2, 3, 1024).unwrap();
+
+        for original in &original {
+            encoder.add_original_shard(original).unwrap();
+        }
+
+        let result: EncoderResult = encoder.encode().unwrap();
+
+        let mut iter: Recovery = result.recovery_iter();
+
+        assert_eq!(iter.len(), 3);
+
+        assert!(iter.next().is_some());
+        assert!(iter.next().is_some());
+        assert_eq!(iter.len(), 1);
+
+        assert!(iter.next().is_some());
+        assert_eq!(iter.len(), 0);
+
+        assert!(iter.next().is_none());
+        assert_eq!(iter.len(), 0);
+    }
 }
