@@ -79,7 +79,17 @@ impl<'a> Iterator for Recovery<'a> {
             None
         }
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let remaining = self.work.recovery_count() - self.next_index;
+        (remaining, Some(remaining))
+    }
 }
+
+// ======================================================================
+// Recovery - IMPL ExactSizeIterator
+
+impl ExactSizeIterator for Recovery<'_> {}
 
 // ======================================================================
 // Recovery - CRATE
