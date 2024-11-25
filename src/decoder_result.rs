@@ -80,6 +80,11 @@ impl<'a> Iterator for RestoredOriginal<'a> {
             None
         }
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let max_remaining = self.work.missing_original_count();
+        (0, Some(max_remaining))
+    }
 }
 
 // ======================================================================
