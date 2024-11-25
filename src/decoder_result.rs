@@ -90,6 +90,11 @@ impl<'a> Iterator for RestoredOriginal<'a> {
 }
 
 // ======================================================================
+// RestoredOriginal - IMPL ExactSizeIterator
+
+impl ExactSizeIterator for RestoredOriginal<'_> {}
+
+// ======================================================================
 // RestoredOriginal - CRATE
 
 impl<'a> RestoredOriginal<'a> {
