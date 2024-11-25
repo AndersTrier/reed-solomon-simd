@@ -54,7 +54,7 @@ impl Drop for DecoderResult<'_> {
 ///
 /// This struct is created by [`DecoderResult::restored_original_iter`].
 pub struct RestoredOriginal<'a> {
-    ended: bool,
+    remaining: usize,
     next_index: usize,
     work: &'a DecoderWork,
 }
@@ -65,25 +65,30 @@ pub struct RestoredOriginal<'a> {
 impl<'a> Iterator for RestoredOriginal<'a> {
     type Item = (usize, &'a [u8]);
     fn next(&mut self) -> Option<(usize, &'a [u8])> {
-        if self.ended {
-            None
-        } else {
-            let mut index = self.next_index;
-            while index < self.work.original_count() {
-                if let Some(original) = self.work.restored_original(index) {
-                    self.next_index = index + 1;
-                    return Some((index, original));
-                }
-                index += 1;
-            }
-            self.ended = true;
-            None
+        if self.remaining == 0 {
+            return None;
         }
+
+        let mut index = self.next_index;
+        while index < self.work.original_count() {
+            if let Some(original) = self.work.restored_original(index) {
+                self.next_index = index + 1;
+                self.remaining -= 1;
+                return Some((index, original));
+            }
+            index += 1;
+        }
+
+        debug_assert!(
+            false,
+            "Inconsistency in internal data structures. Please report."
+        );
+
+        None
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let max_remaining = self.work.missing_original_count();
-        (0, Some(max_remaining))
+        (self.remaining, Some(self.remaining))
     }
 }
 
@@ -93,7 +98,7 @@ impl<'a> Iterator for RestoredOriginal<'a> {
 impl<'a> RestoredOriginal<'a> {
     pub(crate) fn new(work: &'a DecoderWork) -> Self {
         Self {
-            ended: false,
+            remaining: work.missing_original_count(),
             next_index: 0,
             work,
         }
