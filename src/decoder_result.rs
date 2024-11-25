@@ -168,4 +168,39 @@ mod tests {
             simple_roundtrip(shard_size);
         }
     }
+
+    #[test]
+    fn decoder_result_size_hint() {
+        let shard_size = 64;
+        let original = test_util::generate_original(3, shard_size, 0);
+
+        let mut encoder = ReedSolomonEncoder::new(3, 2, shard_size).unwrap();
+        let mut decoder = ReedSolomonDecoder::new(3, 2, shard_size).unwrap();
+
+        for original in &original {
+            encoder.add_original_shard(original).unwrap();
+        }
+
+        let result = encoder.encode().unwrap();
+        let recovery: Vec<_> = result.recovery_iter().collect();
+
+        decoder.add_original_shard(1, &original[1]).unwrap();
+        decoder.add_recovery_shard(0, recovery[0]).unwrap();
+        decoder.add_recovery_shard(1, recovery[1]).unwrap();
+
+        let result: DecoderResult = decoder.decode().unwrap();
+
+        let mut iter: RestoredOriginal = result.restored_original_iter();
+
+        assert_eq!(iter.len(), 2);
+
+        assert!(iter.next().is_some());
+        assert_eq!(iter.len(), 1);
+
+        assert!(iter.next().is_some());
+        assert_eq!(iter.len(), 0);
+
+        assert!(iter.next().is_none());
+        assert_eq!(iter.len(), 0);
+    }
 }
