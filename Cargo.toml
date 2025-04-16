@@ -20,6 +20,9 @@ include = [
 [dependencies]
 fixedbitset = "0.4.0"
 
+[target.'cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))'.dependencies]
+cpufeatures = "0.2.17"
+
 [build-dependencies]
 readme-rustdocifier = "0.1.0"
 
