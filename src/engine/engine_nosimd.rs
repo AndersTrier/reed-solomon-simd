@@ -1,4 +1,4 @@
-use std::iter::zip;
+use core::iter::zip;
 
 use crate::engine::{
     tables::{self, Mul16, Skew},

@@ -12,7 +12,8 @@
     clippy::wildcard_imports
 )]
 
-use std::{collections::HashMap, fmt};
+use core::fmt;
+use std::collections::HashMap;
 
 pub use crate::{
     decoder_result::{DecoderResult, RestoredOriginal},
@@ -227,7 +228,7 @@ impl fmt::Display for Error {
 // ======================================================================
 // Error - IMPL ERROR
 
-impl std::error::Error for Error {}
+impl core::error::Error for Error {}
 
 // ======================================================================
 // FUNCTIONS - PUBLIC

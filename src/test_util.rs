@@ -1,4 +1,5 @@
-use std::{collections::HashMap, ops::Range};
+use core::ops::Range;
+use std::collections::HashMap;
 
 use fixedbitset::FixedBitSet;
 use rand::{Rng, SeedableRng};

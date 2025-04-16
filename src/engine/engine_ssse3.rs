@@ -1,9 +1,9 @@
-use std::iter::zip;
+use core::iter::zip;
 
 #[cfg(target_arch = "x86")]
-use std::arch::x86::*;
+use core::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
-use std::arch::x86_64::*;
+use core::arch::x86_64::*;
 
 use crate::engine::{
     tables::{self, Mul128, Multiply128lutT, Skew},
@@ -122,15 +122,15 @@ impl Ssse3 {
         let mut prod_hi: __m128i;
 
         unsafe {
-            let t0_lo = _mm_loadu_si128(std::ptr::from_ref::<u128>(&lut.lo[0]).cast::<__m128i>());
-            let t1_lo = _mm_loadu_si128(std::ptr::from_ref::<u128>(&lut.lo[1]).cast::<__m128i>());
-            let t2_lo = _mm_loadu_si128(std::ptr::from_ref::<u128>(&lut.lo[2]).cast::<__m128i>());
-            let t3_lo = _mm_loadu_si128(std::ptr::from_ref::<u128>(&lut.lo[3]).cast::<__m128i>());
+            let t0_lo = _mm_loadu_si128(core::ptr::from_ref::<u128>(&lut.lo[0]).cast::<__m128i>());
+            let t1_lo = _mm_loadu_si128(core::ptr::from_ref::<u128>(&lut.lo[1]).cast::<__m128i>());
+            let t2_lo = _mm_loadu_si128(core::ptr::from_ref::<u128>(&lut.lo[2]).cast::<__m128i>());
+            let t3_lo = _mm_loadu_si128(core::ptr::from_ref::<u128>(&lut.lo[3]).cast::<__m128i>());
 
-            let t0_hi = _mm_loadu_si128(std::ptr::from_ref::<u128>(&lut.hi[0]).cast::<__m128i>());
-            let t1_hi = _mm_loadu_si128(std::ptr::from_ref::<u128>(&lut.hi[1]).cast::<__m128i>());
-            let t2_hi = _mm_loadu_si128(std::ptr::from_ref::<u128>(&lut.hi[2]).cast::<__m128i>());
-            let t3_hi = _mm_loadu_si128(std::ptr::from_ref::<u128>(&lut.hi[3]).cast::<__m128i>());
+            let t0_hi = _mm_loadu_si128(core::ptr::from_ref::<u128>(&lut.hi[0]).cast::<__m128i>());
+            let t1_hi = _mm_loadu_si128(core::ptr::from_ref::<u128>(&lut.hi[1]).cast::<__m128i>());
+            let t2_hi = _mm_loadu_si128(core::ptr::from_ref::<u128>(&lut.hi[2]).cast::<__m128i>());
+            let t3_hi = _mm_loadu_si128(core::ptr::from_ref::<u128>(&lut.hi[3]).cast::<__m128i>());
 
             let clr_mask = _mm_set1_epi8(0x0f);
 

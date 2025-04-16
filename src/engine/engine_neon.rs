@@ -2,8 +2,8 @@ use crate::engine::{
     tables::{self, Mul128, Multiply128lutT, Skew},
     utils, Engine, GfElement, ShardsRefMut, GF_MODULUS, GF_ORDER,
 };
-use std::arch::aarch64::*;
-use std::iter::zip;
+use core::arch::aarch64::*;
+use core::iter::zip;
 
 // ======================================================================
 // Neon - PUBLIC
@@ -123,15 +123,15 @@ impl Neon {
         let mut prod_hi: uint8x16_t;
 
         unsafe {
-            let t0_lo = vld1q_u8(std::ptr::from_ref::<u128>(&lut.lo[0]).cast::<u8>());
-            let t1_lo = vld1q_u8(std::ptr::from_ref::<u128>(&lut.lo[1]).cast::<u8>());
-            let t2_lo = vld1q_u8(std::ptr::from_ref::<u128>(&lut.lo[2]).cast::<u8>());
-            let t3_lo = vld1q_u8(std::ptr::from_ref::<u128>(&lut.lo[3]).cast::<u8>());
+            let t0_lo = vld1q_u8(core::ptr::from_ref::<u128>(&lut.lo[0]).cast::<u8>());
+            let t1_lo = vld1q_u8(core::ptr::from_ref::<u128>(&lut.lo[1]).cast::<u8>());
+            let t2_lo = vld1q_u8(core::ptr::from_ref::<u128>(&lut.lo[2]).cast::<u8>());
+            let t3_lo = vld1q_u8(core::ptr::from_ref::<u128>(&lut.lo[3]).cast::<u8>());
 
-            let t0_hi = vld1q_u8(std::ptr::from_ref::<u128>(&lut.hi[0]).cast::<u8>());
-            let t1_hi = vld1q_u8(std::ptr::from_ref::<u128>(&lut.hi[1]).cast::<u8>());
-            let t2_hi = vld1q_u8(std::ptr::from_ref::<u128>(&lut.hi[2]).cast::<u8>());
-            let t3_hi = vld1q_u8(std::ptr::from_ref::<u128>(&lut.hi[3]).cast::<u8>());
+            let t0_hi = vld1q_u8(core::ptr::from_ref::<u128>(&lut.hi[0]).cast::<u8>());
+            let t1_hi = vld1q_u8(core::ptr::from_ref::<u128>(&lut.hi[1]).cast::<u8>());
+            let t2_hi = vld1q_u8(core::ptr::from_ref::<u128>(&lut.hi[2]).cast::<u8>());
+            let t3_hi = vld1q_u8(core::ptr::from_ref::<u128>(&lut.hi[3]).cast::<u8>());
 
             let clr_mask = vdupq_n_u8(0x0f);
 

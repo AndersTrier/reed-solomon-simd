@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 use crate::{
     engine::{self, Engine, GF_MODULUS, GF_ORDER},
@@ -48,7 +48,7 @@ impl<E: Engine> RateEncoder<E> for HighRateEncoder<E> {
 
         // FIRST CHUNK
 
-        let first_count = std::cmp::min(original_count, chunk_size);
+        let first_count = core::cmp::min(original_count, chunk_size);
 
         work.zero(first_count..chunk_size);
         engine::ifft_skew_end(engine, &mut work, 0, chunk_size, first_count);
@@ -352,7 +352,7 @@ mod tests {
                 1024,
                 recovery_hash,
                 &[*recovery_count..*original_count],
-                &[0..std::cmp::min(*original_count, *recovery_count)],
+                &[0..core::cmp::min(*original_count, *recovery_count)],
                 *seed,
             );
         }

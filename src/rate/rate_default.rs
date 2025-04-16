@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, marker::PhantomData};
+use core::{cmp::Ordering, marker::PhantomData};
 
 use crate::{
     engine::{Engine, GF_ORDER},
@@ -23,8 +23,8 @@ fn use_high_rate(original_count: usize, recovery_count: usize) -> Result<bool, E
     let original_count_pow2 = original_count.next_power_of_two();
     let recovery_count_pow2 = recovery_count.next_power_of_two();
 
-    let smaller_pow2 = std::cmp::min(original_count_pow2, recovery_count_pow2);
-    let larger = std::cmp::max(original_count, recovery_count);
+    let smaller_pow2 = core::cmp::min(original_count_pow2, recovery_count_pow2);
+    let larger = core::cmp::max(original_count, recovery_count);
 
     if original_count == 0 || recovery_count == 0 || smaller_pow2 + larger > GF_ORDER {
         return Err(Error::UnsupportedShardCount {
@@ -166,7 +166,7 @@ impl<E: Engine> RateEncoder<E> for DefaultRateEncoder<E> {
     ) -> Result<(), Error> {
         let new_rate_is_high = use_high_rate(original_count, recovery_count)?;
 
-        self.0 = match std::mem::take(&mut self.0) {
+        self.0 = match core::mem::take(&mut self.0) {
             InnerEncoder::High(mut high) => {
                 if new_rate_is_high {
                     high.reset(original_count, recovery_count, shard_bytes)?;
@@ -310,7 +310,7 @@ impl<E: Engine> RateDecoder<E> for DefaultRateDecoder<E> {
     ) -> Result<(), Error> {
         let new_rate_is_high = use_high_rate(original_count, recovery_count)?;
 
-        self.0 = match std::mem::take(&mut self.0) {
+        self.0 = match core::mem::take(&mut self.0) {
             InnerDecoder::High(mut high) => {
                 if new_rate_is_high {
                     high.reset(original_count, recovery_count, shard_bytes)?;
@@ -371,7 +371,7 @@ mod tests {
                 1024,
                 recovery_hash,
                 &[*recovery_count..*original_count],
-                &[0..std::cmp::min(*original_count, *recovery_count)],
+                &[0..core::cmp::min(*original_count, *recovery_count)],
                 *seed,
             );
         }
