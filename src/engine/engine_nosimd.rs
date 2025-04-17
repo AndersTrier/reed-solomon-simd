@@ -321,6 +321,8 @@ impl NoSimd {
 mod tests {
     use crate::engine::{Engine, Naive, NoSimd};
 
+    #[cfg(not(feature = "std"))]
+    use alloc::vec;
     use rand::{Rng, SeedableRng};
     use rand_chacha::ChaCha8Rng;
 

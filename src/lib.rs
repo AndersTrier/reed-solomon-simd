@@ -11,9 +11,14 @@
     clippy::large_stack_arrays,
     clippy::wildcard_imports
 )]
+#![cfg_attr(not(feature = "std"), no_std)]
 
+extern crate alloc;
+
+use alloc::collections::BTreeMap;
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
 use core::fmt;
-use std::collections::HashMap;
 
 pub use crate::{
     decoder_result::{DecoderResult, RestoredOriginal},
@@ -293,7 +298,7 @@ pub fn decode<O, R, OT, RT>(
     recovery_count: usize,
     original: O,
     recovery: R,
-) -> Result<HashMap<usize, Vec<u8>>, Error>
+) -> Result<BTreeMap<usize, Vec<u8>>, Error>
 where
     O: IntoIterator<Item = (usize, OT)>,
     R: IntoIterator<Item = (usize, RT)>,
@@ -318,7 +323,7 @@ where
         let original_received_count = original.count();
         if original_received_count == original_count {
             // Nothing to do, original data is complete.
-            return Ok(HashMap::new());
+            return Ok(BTreeMap::new());
         }
 
         return Err(Error::NotEnoughShards {
@@ -339,7 +344,7 @@ where
         decoder.add_recovery_shard(index, recovery)?;
     }
 
-    let mut result = HashMap::new();
+    let mut result = BTreeMap::new();
     for (index, original) in decoder.decode()?.restored_original_iter() {
         result.insert(index, original.to_vec());
     }

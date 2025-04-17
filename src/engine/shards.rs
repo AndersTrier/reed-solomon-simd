@@ -1,3 +1,5 @@
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
 use core::ops::{Bound, Index, IndexMut, Range, RangeBounds};
 
 // ======================================================================

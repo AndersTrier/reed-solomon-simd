@@ -1,5 +1,9 @@
+use alloc::collections::BTreeMap;
+#[cfg(not(feature = "std"))]
+use alloc::vec;
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
 use core::ops::Range;
-use std::collections::HashMap;
 
 use fixedbitset::FixedBitSet;
 use rand::{Rng, SeedableRng};
@@ -56,12 +60,15 @@ where
     let got = sha.finalize();
 
     if &got[..] != hex::decode(expected).unwrap() {
-        print!("GOT     : ");
-        for x in got {
-            print!("{:02x}", x);
+        #[cfg(feature = "std")]
+        {
+            print!("GOT     : ");
+            for x in got {
+                print!("{:02x}", x);
+            }
+            println!();
+            println!("EXPECTED: {}", expected);
         }
-        println!();
-        println!("EXPECTED: {}", expected);
         panic!("recovery shards hash doesn't match");
     }
 }
@@ -119,7 +126,7 @@ pub(crate) fn roundtrip<R: Rate<E>, E: Engine, T: IntOrRange>(
     }
 
     let result = decoder.decode().unwrap();
-    let restored: HashMap<_, _> = result.restored_original_iter().collect();
+    let restored: BTreeMap<_, _> = result.restored_original_iter().collect();
 
     for i in 0..original_count {
         if !original_received[i] {

@@ -31,3 +31,6 @@ jobs:
 
       - name: Run tests
         run: cargo test --verbose -- --include-ignored
+
+      - name: Run tests (no_std)
+        run: cargo test --verbose --no-default-features -- --include-ignored

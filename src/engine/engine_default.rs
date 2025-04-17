@@ -1,4 +1,6 @@
 use crate::engine::{Engine, GfElement, NoSimd, ShardsRefMut, GF_ORDER};
+#[cfg(not(feature = "std"))]
+use alloc::boxed::Box;
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 use crate::engine::{Avx2, Ssse3};

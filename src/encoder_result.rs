@@ -102,6 +102,9 @@ mod tests {
     use super::*;
     use crate::{test_util, ReedSolomonEncoder};
 
+    #[cfg(not(feature = "std"))]
+    use alloc::vec::Vec;
+
     #[test]
     // EncoderResult::recovery
     // EncoderResult::recovery_iter
