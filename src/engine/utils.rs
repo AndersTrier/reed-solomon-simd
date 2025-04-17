@@ -18,7 +18,7 @@ use core::iter::zip;
 /// [`Avx2`]: crate::engine::Avx2
 #[inline(always)]
 pub fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-    let log_walsh = &*tables::LOG_WALSH;
+    let log_walsh = tables::get_log_walsh();
 
     fwht::fwht(erasures, truncated_size);
 

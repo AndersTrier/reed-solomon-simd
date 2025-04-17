@@ -29,8 +29,8 @@ impl Neon {
     ///
     /// [`LogWalsh`]: crate::engine::tables::LogWalsh
     pub fn new() -> Self {
-        let mul128 = &*tables::MUL128;
-        let skew = &*tables::SKEW;
+        let mul128 = tables::get_mul128();
+        let skew = tables::get_skew();
 
         Self { mul128, skew }
     }

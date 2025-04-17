@@ -88,19 +88,35 @@ pub struct ExpLog {
 // STATIC - PUBLIC
 
 /// Lazily initialized exponentiation and logarithm tables.
-pub static EXP_LOG: LazyLock<ExpLog> = LazyLock::new(initialize_exp_log);
+pub fn get_exp_log() -> &'static ExpLog {
+    static EXP_LOG: LazyLock<ExpLog> = LazyLock::new(initialize_exp_log);
+
+    &EXP_LOG
+}
 
 /// Lazily initialized logarithmic Walsh transform table.
-pub static LOG_WALSH: LazyLock<Box<LogWalsh>> = LazyLock::new(initialize_log_walsh);
+pub fn get_log_walsh() -> &'static LogWalsh {
+    static LOG_WALSH: LazyLock<Box<LogWalsh>> = LazyLock::new(initialize_log_walsh);
+    &LOG_WALSH
+}
 
 /// Lazily initialized multiplication table for the `NoSimd` engine.
-pub static MUL16: LazyLock<Box<Mul16>> = LazyLock::new(initialize_mul16);
+pub fn get_mul16() -> &'static Mul16 {
+    static MUL16: LazyLock<Box<Mul16>> = LazyLock::new(initialize_mul16);
+    &MUL16
+}
 
 /// Lazily initialized multiplication table for SIMD engines.
-pub static MUL128: LazyLock<Box<Mul128>> = LazyLock::new(initialize_mul128);
+pub fn get_mul128() -> &'static Mul128 {
+    static MUL128: LazyLock<Box<Mul128>> = LazyLock::new(initialize_mul128);
+    &MUL128
+}
 
 /// Lazily initialized skew table used in FFT and IFFT operations.
-pub static SKEW: LazyLock<Box<Skew>> = LazyLock::new(initialize_skew);
+pub fn get_skew() -> &'static Skew {
+    static SKEW: LazyLock<Box<Skew>> = LazyLock::new(initialize_skew);
+    &SKEW
+}
 
 // ======================================================================
 // FUNCTIONS - PUBLIC - math
@@ -159,11 +175,11 @@ fn initialize_exp_log() -> ExpLog {
 }
 
 fn initialize_log_walsh() -> Box<LogWalsh> {
-    let log = *EXP_LOG.log;
+    let log = get_exp_log().log.as_slice();
 
     let mut log_walsh: Box<LogWalsh> = Box::new([0; GF_ORDER]);
 
-    log_walsh.copy_from_slice(log.as_ref());
+    log_walsh.copy_from_slice(log);
     log_walsh[0] = 0;
     fwht::fwht(log_walsh.as_mut(), GF_ORDER);
 
@@ -171,8 +187,8 @@ fn initialize_log_walsh() -> Box<LogWalsh> {
 }
 
 fn initialize_mul16() -> Box<Mul16> {
-    let exp = &*EXP_LOG.exp;
-    let log = &*EXP_LOG.log;
+    let exp = &get_exp_log().exp;
+    let log = &get_exp_log().log;
     let mut mul16 = vec![[[0; 16]; 4]; GF_ORDER];
 
     for log_m in 0..=GF_MODULUS {
@@ -191,8 +207,8 @@ fn initialize_mul16() -> Box<Mul16> {
 fn initialize_mul128() -> Box<Mul128> {
     // Based on:
     // https://github.com/catid/leopard/blob/22ddc7804998d31c8f1a2617ee720e063b1fa6cd/LeopardFF16.cpp#L375
-    let exp = &*EXP_LOG.exp;
-    let log = &*EXP_LOG.log;
+    let exp = &get_exp_log().exp;
+    let log = &get_exp_log().log;
 
     let mut mul128 = vec![
         Multiply128lutT {
@@ -221,8 +237,8 @@ fn initialize_mul128() -> Box<Mul128> {
 
 #[allow(clippy::needless_range_loop)]
 fn initialize_skew() -> Box<Skew> {
-    let exp = &*EXP_LOG.exp;
-    let log = &*EXP_LOG.log;
+    let exp = &get_exp_log().exp;
+    let log = &get_exp_log().log;
 
     let mut skew = Box::new([0; GF_MODULUS as usize]);
 
