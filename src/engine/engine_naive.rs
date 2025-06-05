@@ -28,7 +28,7 @@ impl Naive {
     ///
     /// [`LogWalsh`]: crate::engine::tables::LogWalsh
     pub fn new() -> Self {
-        let exp_log = &*tables::get_exp_log();
+        let exp_log = tables::get_exp_log();
         let skew = tables::get_skew();
 
         Self {

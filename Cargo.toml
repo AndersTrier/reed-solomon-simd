@@ -7,7 +7,7 @@ repository = "https://github.com/AndersTrier/reed-solomon-simd"
 keywords = ["erasure", "reed-solomon", "Leopard-RS"]
 categories = ["algorithms", "encoding"]
 edition = "2021"
-rust-version = "1.80"
+rust-version = "1.81"
 
 include = [
     "/benches",
@@ -19,7 +19,7 @@ include = [
 
 [dependencies]
 fixedbitset = { version = "0.4.0", default-features = false }
-once_cell = { version = "1.21.3", default-features = false, features = ["race"] }
+once_cell = { version = "1.21.3", default-features = false, features = ["alloc", "race"] }
 
 [target.'cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))'.dependencies]
 cpufeatures = "0.2.17"
