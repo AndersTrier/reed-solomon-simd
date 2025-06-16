@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 use crate::{
     engine::{self, Engine, GF_MODULUS, GF_ORDER},
@@ -352,7 +352,7 @@ mod tests {
                 1024,
                 recovery_hash,
                 &[*recovery_count..*original_count],
-                &[0..std::cmp::min(*original_count, *recovery_count)],
+                &[0..core::cmp::min(*original_count, *recovery_count)],
                 *seed,
             );
         }

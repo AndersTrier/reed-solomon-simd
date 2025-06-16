@@ -3,7 +3,7 @@
 //! [`Engine`]: crate::engine::Engine
 
 use crate::engine::{fwht, tables, Engine, GfElement, ShardsRefMut, GF_BITS, GF_ORDER};
-use std::iter::zip;
+use core::iter::zip;
 
 // ======================================================================
 // FUNCTIONS - PUBLIC
@@ -18,11 +18,11 @@ use std::iter::zip;
 /// [`Avx2`]: crate::engine::Avx2
 #[inline(always)]
 pub fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-    let log_walsh = &*tables::LOG_WALSH;
+    let log_walsh = tables::get_log_walsh();
 
     fwht::fwht(erasures, truncated_size);
 
-    for (e, factor) in std::iter::zip(erasures.iter_mut(), log_walsh.iter()) {
+    for (e, factor) in zip(erasures.iter_mut(), log_walsh.iter()) {
         let product = u32::from(*e) * u32::from(*factor);
         *e = add_mod(product as GfElement, (product >> GF_BITS) as GfElement);
     }

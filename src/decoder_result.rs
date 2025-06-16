@@ -103,6 +103,9 @@ mod tests {
     use super::*;
     use crate::{test_util, ReedSolomonDecoder, ReedSolomonEncoder};
 
+    #[cfg(not(feature = "std"))]
+    use alloc::vec::Vec;
+
     fn simple_roundtrip(shard_size: usize) {
         let original = test_util::generate_original(3, shard_size, 0);
 

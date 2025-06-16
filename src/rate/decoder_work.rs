@@ -166,7 +166,7 @@ impl DecoderWork {
         self.original_received_count = 0;
         self.recovery_received_count = 0;
 
-        let max_received_pos = std::cmp::max(
+        let max_received_pos = core::cmp::max(
             original_base_pos + original_count,
             recovery_base_pos + recovery_count,
         );

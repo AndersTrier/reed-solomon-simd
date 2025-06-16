@@ -1,4 +1,4 @@
-use std::iter::zip;
+use core::iter::zip;
 
 use crate::engine::{
     tables::{self, Mul16, Skew},
@@ -26,8 +26,8 @@ impl NoSimd {
     ///
     /// [`LogWalsh`]: crate::engine::tables::LogWalsh
     pub fn new() -> Self {
-        let mul16 = &*tables::MUL16;
-        let skew = &*tables::SKEW;
+        let mul16 = tables::get_mul16();
+        let skew = tables::get_skew();
 
         Self { mul16, skew }
     }
@@ -321,6 +321,8 @@ impl NoSimd {
 mod tests {
     use crate::engine::{Engine, Naive, NoSimd};
 
+    #[cfg(not(feature = "std"))]
+    use alloc::vec;
     use rand::{Rng, SeedableRng};
     use rand_chacha::ChaCha8Rng;
 

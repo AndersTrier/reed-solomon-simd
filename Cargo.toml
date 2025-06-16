@@ -1,13 +1,13 @@
 [package]
 name = "reed-solomon-simd"
-version = "3.0.1"
+version = "3.1.0"
 license = "MIT AND BSD-3-Clause"
 description = "Reed-Solomon coding with O(n log n) complexity. Leverages SIMD instructions on x86(-64) and AArch64."
 repository = "https://github.com/AndersTrier/reed-solomon-simd"
-keywords = [ "erasure", "reed-solomon", "Leopard-RS" ]
-categories = [ "algorithms", "encoding" ]
+keywords = ["erasure", "reed-solomon", "Leopard-RS"]
+categories = ["algorithms", "encoding"]
 edition = "2021"
-rust-version = "1.80"
+rust-version = "1.82"
 
 include = [
     "/benches",
@@ -18,13 +18,17 @@ include = [
 ]
 
 [dependencies]
-fixedbitset = "0.4.0"
+fixedbitset = { version = "0.4.0", default-features = false }
+once_cell = { version = "1.21.3", default-features = false, features = ["alloc", "race"] }
+
+[target.'cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))'.dependencies]
+cpufeatures = "0.2.17"
 
 [build-dependencies]
 readme-rustdocifier = "0.1.0"
 
 [dev-dependencies]
-criterion = { version = "0.5.1", features = [ "html_reports" ] }
+criterion = { version = "0.5.1", features = ["html_reports"] }
 hex = "0.4.3"
 rand = "0.8.4"
 rand_chacha = "0.3.1"
@@ -32,9 +36,13 @@ sha2 = "0.10.0"
 
 # These are only for `examples/quick-comparison.rs`.
 reed-solomon-16 = "0.1.0"
-reed-solomon-erasure = { version = "6.0.0", features = [ "simd-accel" ] }
+reed-solomon-erasure = { version = "6.0.0", features = ["simd-accel"] }
 reed-solomon-novelpoly = "2.0.0"
 leopard-codec = "0.1.0"
+
+[features]
+default = ["std"]
+std = ["fixedbitset/std"]
 
 [lib]
 bench = false

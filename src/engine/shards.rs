@@ -1,4 +1,6 @@
-use std::ops::{Bound, Index, IndexMut, Range, RangeBounds};
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+use core::ops::{Bound, Index, IndexMut, Range, RangeBounds};
 
 // ======================================================================
 // Shards - CRATE

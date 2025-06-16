@@ -187,7 +187,9 @@ impl ReedSolomonDecoder {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use alloc::collections::BTreeMap;
+    #[cfg(not(feature = "std"))]
+    use alloc::vec::Vec;
 
     use fixedbitset::FixedBitSet;
 
@@ -229,7 +231,7 @@ mod tests {
         }
 
         let result = decoder.decode().unwrap();
-        let restored: HashMap<_, _> = result.restored_original_iter().collect();
+        let restored: BTreeMap<_, _> = result.restored_original_iter().collect();
 
         for i in 0..original_count {
             if !original_received[i] {

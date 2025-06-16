@@ -28,8 +28,8 @@ impl Naive {
     ///
     /// [`LogWalsh`]: crate::engine::tables::LogWalsh
     pub fn new() -> Self {
-        let exp_log = &*tables::EXP_LOG;
-        let skew = &*tables::SKEW;
+        let exp_log = tables::get_exp_log();
+        let skew = tables::get_skew();
 
         Self {
             exp: &exp_log.exp,
@@ -134,7 +134,7 @@ impl Naive {
     fn mul_add(&self, x: &mut [[u8; 64]], y: &[[u8; 64]], log_m: GfElement) {
         debug_assert_eq!(x.len(), y.len());
 
-        for (x_chunk, y_chunk) in std::iter::zip(x.iter_mut(), y.iter()) {
+        for (x_chunk, y_chunk) in core::iter::zip(x.iter_mut(), y.iter()) {
             for i in 0..32 {
                 let lo = GfElement::from(y_chunk[i]);
                 let hi = GfElement::from(y_chunk[i + 32]);

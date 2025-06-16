@@ -60,6 +60,8 @@ fn fwht_4(data: &mut [GfElement; GF_ORDER], offset: u16, dist: u16) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(not(feature = "std"))]
+    use alloc::vec::Vec;
     use rand::{Rng, SeedableRng};
     use rand_chacha::ChaCha8Rng;
 
