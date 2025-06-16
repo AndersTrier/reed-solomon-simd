@@ -65,7 +65,7 @@ impl Shards {
 
         if tail_len == 0 {
             return;
-        };
+        }
 
         for idx in range {
             let last_chunk = &mut self[idx][whole_chunk_count];
