@@ -65,10 +65,6 @@ pub struct RestoredOriginal<'a> {
 impl<'a> Iterator for RestoredOriginal<'a> {
     type Item = (usize, &'a [u8]);
     fn next(&mut self) -> Option<(usize, &'a [u8])> {
-        if self.remaining == 0 {
-            return None;
-        }
-
         let mut index = self.next_index;
         while index < self.work.original_count() {
             if let Some(original) = self.work.restored_original(index) {
@@ -78,9 +74,6 @@ impl<'a> Iterator for RestoredOriginal<'a> {
             }
             index += 1;
         }
-
-        // If we reach this point, there's an inconsistency in the internal data structures.
-        debug_assert!(false);
         None
     }
 
