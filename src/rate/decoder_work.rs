@@ -202,4 +202,8 @@ impl DecoderWork {
             self.original_base_pos..self.original_base_pos + self.original_count,
         );
     }
+
+    pub(crate) fn missing_original_count(&self) -> usize {
+        self.original_count - self.original_received_count
+    }
 }

@@ -120,4 +120,8 @@ impl EncoderWork {
         self.shards
             .undo_last_chunk_encoding(self.shard_bytes, 0..self.recovery_count);
     }
+
+    pub(crate) fn recovery_count(&self) -> usize {
+        self.recovery_count
+    }
 }
