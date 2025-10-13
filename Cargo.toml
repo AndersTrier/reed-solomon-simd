@@ -18,6 +18,7 @@ include = [
 ]
 
 [dependencies]
+aligned-vec = { version = "0.6.4", default-features = false }
 fixedbitset = { version = "0.5.7", default-features = false }
 once_cell = { version = "1.21.3", default-features = false, features = ["alloc", "race"] }
 
@@ -42,7 +43,7 @@ leopard-codec = "0.2.0"
 
 [features]
 default = ["std"]
-std = ["fixedbitset/std"]
+std = ["fixedbitset/std", "aligned-vec/std"]
 
 [lib]
 bench = false
