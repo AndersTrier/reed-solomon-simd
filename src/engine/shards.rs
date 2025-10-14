@@ -1,6 +1,6 @@
-#[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
 use core::ops::{Bound, Index, IndexMut, Range, RangeBounds};
+
+use aligned_vec::{AVec, CACHELINE_ALIGN};
 
 // ======================================================================
 // Shards - CRATE
@@ -11,7 +11,7 @@ pub(crate) struct Shards {
     shard_len_64: usize,
 
     // Flat Vec of `shard_count * shard_len_64 * 64` bytes.
-    data: Vec<[u8; 64]>,
+    data: AVec<[u8; 64]>,
 }
 
 impl Shards {
@@ -23,7 +23,7 @@ impl Shards {
         Self {
             shard_count: 0,
             shard_len_64: 0,
-            data: Vec::new(),
+            data: AVec::new(CACHELINE_ALIGN),
         }
     }
 
