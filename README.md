@@ -66,6 +66,16 @@ I invite you to clone [reed-solomon-simd] and run your own benchmark:
 $ cargo bench main
 ```
 
+## Applications
+
+This crate implements the Reed-Solomon codes used by distributed systems, and cryptography, but not the Reed-Solomon codes with error location and correction suitable for local storage.
+
+Reed-Solomon codes have classically provided two functions, error location and error correction. Implementation involves matrix arithmetic or other techniques with complexity worse than `O(length * shards)`.  As such, there are few shards in classical storage applications, and so they use small fields like `GF(2^8)`.
+
+In cryptography and distributed systems, we often employs Lagrange polynomials aka Reed-Solomon for data distribution, but such uses need shards to be much larger, and they require larger fields like prime fields or `GF(2^16)`.  In these cases, encoding and decoding could be accomplished with FFTs or additive FFTs plus special field representations, instead of matrix-like arithmetic.  All this yields much faster codes with complexities like `O(length * log shards)`, but doing so sacrifices the error location and error correction capabilities. 
+
+It turns out this trade off makes sense though because our errors have an adversarial nature in cryptography and distributed systems, meaning if errors occur then they could easily overwhelm location or correction anyways.  We can always detect the presence of errors using hashes of course, so these applications handle error detection to another layer of the protocol.
+
 ## Simple usage
 
 1. Divide data into equal-sized original shards.
