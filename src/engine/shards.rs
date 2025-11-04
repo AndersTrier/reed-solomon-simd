@@ -262,12 +262,7 @@ impl ShardsRefMut<'_> {
         y *= self.shard_len_64;
         count *= self.shard_len_64;
 
-        if x < y {
-            let (head, tail) = self.data.split_at_mut(y);
-            (&mut head[x..x + count], &mut tail[..count])
-        } else {
-            let (head, tail) = self.data.split_at_mut(x);
-            (&mut tail[..count], &mut head[y..y + count])
-        }
+        let (head, tail) = self.data.split_at_mut(x);
+        (&mut tail[..count], &mut head[y..y + count])
     }
 }
