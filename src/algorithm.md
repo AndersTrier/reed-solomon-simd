@@ -120,11 +120,146 @@ This is implemented in [`LowRateEncoder`].
 
 # Decoding
 
-**TODO**
+Decoding recovers erased original shards from any `original_count` received shards
+(original or recovery). It requires exactly `original_count` received shards.
+
+## Mathematical basis
+
+Let `Ω` be the set of erased positions and `R` the received positions.
+Define the **erasure locator polynomial**:
+
+```text
+E(x) = ∏_{j ∈ Ω} (x ⊕ α_j)    over GF(2^16)
+```
+
+where `α_j` is the evaluation point for position `j`. Key properties:
+- `E(α_j) = 0` for all `j ∈ Ω` (erased positions are roots)
+- `E(α_j) ≠ 0` for all `j ∈ R` (received positions are not roots)
+
+The **formal derivative** `D` satisfies the Leibniz product rule over any field:
+
+```text
+D(f · g) = D(f)·g + f·D(g)
+```
+
+At an erased position where `E(α_j) = 0`, this gives:
+
+```text
+D(C · E)(α_j) = C(α_j) · D(E)(α_j)
+```
+
+where `C(x)` is the codeword polynomial. So the erased value is recoverable as:
+
+```text
+C(α_j) = D(C · E)(α_j) / D(E)(α_j)
+```
+
+`D(E)(α_j) = ∏_{k ∈ Ω, k≠j}(α_j - α_k)` is nonzero whenever all evaluation
+points are distinct, which holds as long as `original_count + recovery_count ≤ GF_ORDER`.
+
+In GF(2^16) with characteristic 2, the formal derivative kills all even-power terms:
+`D(x^{2k}) = 0`. Its kernel is the set of polynomials in `x²`, but this does not
+affect correctness since `E` has only simple roots (from distinct evaluation points).
+
+## Decoding algorithm
+
+The decoder operates on a flat work buffer laid out as:
+
+```text
+High rate:  work[0 .. recovery_count]            = received recovery shards
+            work[chunk_size .. chunk_size+n]      = received original shards
+
+Low rate:   work[0 .. original_count]            = received original shards
+            work[chunk_size .. chunk_size+m]     = received recovery shards
+```
+
+Missing shards and padding gaps are zeroed.
+
+### Step 1 — Compute erasure locator values (FWHT)
+
+Build indicator vector `erasures[i] = 1` if position `i` is erased, else `0`.
+Evaluate `E(α_i)` for all `i` simultaneously using the Fast Walsh-Hadamard Transform:
+
+```text
+1. erasures ← FWHT(erasures, active_size)
+2. erasures[i] ← erasures[i] * log_walsh[i]   (mod GF_MODULUS, pointwise)
+3. erasures ← FWHT(erasures, GF_ORDER)
+```
+
+Result: `erasures[i] = log(E(α_i))` for each position `i`. The `log_walsh` table is
+the precomputed FWHT of the logarithm table: `FWHT(log[·])`. This works because
+`log E(x) = Σ_{j∈Ω} log(x ⊕ α_j)` decomposes into a convolution in the Walsh-Hadamard
+domain, which the FWHT diagonalizes.
+
+### Step 2 — Scale received shards by E
+
+```text
+work[i] ← work[i] · E(α_i)   for each received i  (multiply using log: erasures[i])
+work[i] ← 0                   for each erased i
+```
+
+This forms `R̃(α_i) = C(α_i) · E(α_i)` at received positions and `0` at erased
+positions, making `R̃` a well-defined polynomial in the work buffer.
+
+### Step 3 — IFFT → formal derivative → FFT
+
+```text
+work ← IFFT(work)          // evaluation domain → coefficient domain
+work ← D(work)             // formal derivative in coefficient domain
+work ← FFT(work)           // coefficient domain → evaluation domain
+```
+
+The formal derivative in the Cantor-basis coefficient representation is
+(see `formal_derivative` in `utils.rs`):
+
+```text
+for i = 1 to len-1:
+    width = 1 << trailing_zeros(i)
+    work[i - width] ^= work[i]
+```
+
+This butterfly pattern implements the matrix of `D` in the subspace polynomial
+(Cantor) basis. It runs in O(n log n).
+
+After these three steps, `work` holds `D(R̃)(α_i)` at each evaluation point, which
+at erased positions equals `C(α_i) · D(E)(α_i)`.
+
+### Step 4 — Reveal erased shards
+
+```text
+for each erased position j:
+    work[j] ← work[j] · E(α_j)^{-1}
+```
+
+implemented as:
+
+```text
+engine.mul(&mut work[j], GF_MODULUS - erasures[j])
+```
+
+`GF_MODULUS - erasures[j]` is `-log(E(α_j))` in the log domain, i.e., multiplication
+by `E(α_j)^{-1}`. Since `D(E)(α_j) = E(α_j)` holds in this Cantor-basis construction
+(up to the sign absorbed into the erasure polynomial definition), this single multiply
+recovers `C(α_j)`.
+
+## High rate decoding
+
+Implemented in [`HighRateDecoder`]. Uses `chunk_size = recovery_count.next_power_of_two()`.
+`work_count = (chunk_size + original_count).next_power_of_two()`.
+The IFFT/D/FFT triple operates on the full `work_count`-sized buffer, spanning both
+the recovery region `[0, chunk_size)` and the original region `[chunk_size, chunk_size+n)`.
+
+## Low rate decoding
+
+Implemented in [`LowRateDecoder`]. Uses `chunk_size = original_count.next_power_of_two()`.
+`work_count = (chunk_size + recovery_count).next_power_of_two()`.
+Same structure with original and recovery regions swapped.
 
 
 [`GfElement`]: crate::engine::GfElement
 [`HighRateEncoder`]: crate::rate::HighRateEncoder
+[`HighRateDecoder`]: crate::rate::HighRateDecoder
 [`LowRateEncoder`]: crate::rate::LowRateEncoder
+[`LowRateDecoder`]: crate::rate::LowRateDecoder
 
 [`GF_ORDER`]: crate::engine::GF_ORDER
