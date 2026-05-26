@@ -10,17 +10,17 @@ struct Instant {
 impl Instant {
     fn now() -> Self {
         Instant {
-            start: js_sys::Date::now(),
+            start: now()
         }
     }
 
     fn elapsed(&self) -> std::time::Duration {
-        let elapsed_ms = js_sys::Date::now() - self.start;
-        std::time::Duration::from_secs_f64(elapsed_ms as f64 / 1000.0)
+        let elapsed_ms = now() - self.start;
+        std::time::Duration::from_secs_f64(elapsed_ms / 1000.0)
     }
 }
 
-// Route print!/println!/eprint!/eprintln! through process.stdout/stderr on wasm32.
+// Route print!/println! through process.stdout/stderr on wasm32.
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen::prelude::wasm_bindgen]
 extern "C" {
@@ -29,6 +29,9 @@ extern "C" {
 
     #[wasm_bindgen::prelude::wasm_bindgen(js_namespace = globalThis, js_name = "process.stderr.write")]
     fn stderr_write(s: &str);
+
+    #[wasm_bindgen::prelude::wasm_bindgen(js_namespace = globalThis, js_name = "performance.now")]
+    fn now() -> f64;
 }
 
 #[cfg(target_arch = "wasm32")]
