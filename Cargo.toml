@@ -2,7 +2,7 @@
 name = "reed-solomon-simd"
 version = "3.1.0"
 license = "MIT AND BSD-3-Clause"
-description = "Reed-Solomon coding with O(n log n) complexity. Leverages SIMD instructions on x86(-64) and AArch64."
+description = "Reed-Solomon coding with O(n log n) complexity. Leverages SIMD instructions on x86(-64), AArch64, and WebAssembly SIMD128."
 repository = "https://github.com/AndersTrier/reed-solomon-simd"
 keywords = ["erasure", "reed-solomon", "Leopard-RS"]
 categories = ["algorithms", "encoding"]
@@ -28,21 +28,33 @@ cpufeatures = "0.2.17"
 readme-rustdocifier = "0.1.1"
 
 [dev-dependencies]
-criterion = { version = "0.7.0", features = ["html_reports"] }
 hex = "0.4.3"
 rand = "0.9.2"
 rand_chacha = "0.9.0"
 sha2 = "0.10.9"
+wasm-bindgen-test = "0.3"
 
 # These are only for `examples/quick-comparison.rs`.
+# Not available on wasm32.
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+criterion = { version = "0.7.0", features = ["html_reports"] }
 reed-solomon-16 = "0.1.0"
 reed-solomon-erasure = { version = "6.0.0", features = ["simd-accel"] }
 reed-solomon-novelpoly = "2.0.0"
 leopard-codec = "0.2.0"
 
+# Required for `rand` to work on wasm32-unknown-unknown.
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }
+
 [features]
 default = ["std"]
 std = ["fixedbitset/std"]
+
+# Required for runtime SIMD128 detection on wasm32.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+js-sys = "0.3"
 
 [lib]
 bench = false

@@ -22,6 +22,8 @@
 //!     - Optimized engine that takes advantage of the x86(-64) SSSE3 SIMD instructions.
 //! - [`Neon`]
 //!     - Optimized engine that takes advantage of the `AArch64` Neon SIMD instructions.
+//! - [`Wasm`]
+//!     - Optimized engine that takes advantage of the WebAssembly SIMD128 instructions.
 //! - [`DefaultEngine`]
 //!     - Default engine which is used when no specific engine is given.
 //!     - Automatically selects best engine at runtime.
@@ -45,6 +47,9 @@ pub use self::{engine_avx2::Avx2, engine_ssse3::Ssse3};
 #[cfg(target_arch = "aarch64")]
 pub use self::engine_neon::Neon;
 
+#[cfg(target_arch = "wasm32")]
+pub use self::engine_wasm::Wasm;
+
 mod engine_default;
 mod engine_naive;
 mod engine_nosimd;
@@ -56,6 +61,9 @@ mod engine_ssse3;
 
 #[cfg(target_arch = "aarch64")]
 mod engine_neon;
+
+#[cfg(target_arch = "wasm32")]
+mod engine_wasm;
 
 mod fwht;
 mod shards;

@@ -1,4 +1,5 @@
-use crate::engine::{Engine, GfElement, NoSimd, ShardsRefMut, GF_ORDER};
+use crate::engine::NoSimd;
+use crate::engine::{Engine, GfElement, ShardsRefMut, GF_ORDER};
 #[cfg(not(feature = "std"))]
 use alloc::boxed::Box;
 
@@ -7,6 +8,9 @@ use crate::engine::{Avx2, Ssse3};
 
 #[cfg(target_arch = "aarch64")]
 use crate::engine::Neon;
+
+#[cfg(target_arch = "wasm32")]
+use crate::engine::Wasm;
 
 // ======================================================================
 // DefaultEngine - PUBLIC
@@ -25,6 +29,19 @@ impl DefaultEngine {
     /// On `AArch64` the engine is chosen in the following order of preference:
     /// 1. [`Neon`]
     /// 2. [`NoSimd`]
+    ///
+    /// On `wasm32` the engine is chosen in the following order of preference:
+    /// 1. [`Wasm`] (if WebAssembly SIMD128 is supported at runtime)
+    /// 2. [`NoSimd`]
+    ///
+    /// # WebAssembly SIMD128 Runtime Detection
+    ///
+    /// On `wasm32`, [`DefaultEngine`] detects SIMD128 support at runtime
+    /// using JavaScript interop (via `wasm-bindgen`). If SIMD128 is supported,
+    /// the [`Wasm`] engine is used; otherwise, it falls back to [`NoSimd`].
+    ///
+    /// This requires a runtime that supports `wasm-bindgen` (e.g., a browser
+    /// or Node.js with `wasm-bindgen` initialization).
     pub fn new() -> Self {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
@@ -44,6 +61,13 @@ impl DefaultEngine {
             cpufeatures::new!(has_neon, "neon");
             if has_neon::get() {
                 return Self(Box::new(Neon::new()));
+            }
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            if Wasm::wasm_simd128_supported() {
+                return Self(Box::new(Wasm::new()));
             }
         }
 
@@ -109,6 +133,13 @@ impl Engine for DefaultEngine {
             cpufeatures::new!(has_neon, "neon");
             if has_neon::get() {
                 return Neon::eval_poly(erasures, truncated_size);
+            }
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            if Wasm::wasm_simd128_supported() {
+                return Wasm::eval_poly(erasures, truncated_size);
             }
         }
 

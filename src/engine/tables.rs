@@ -10,12 +10,14 @@
 //! | [`Log`]      | 128 kiB | yes              | yes              | all                |
 //! | [`LogWalsh`] | 128 kiB | -                | yes              | all                |
 //! | [`Mul16`]    | 8 MiB   | yes              | yes              | [`NoSimd`]         |
-//! | [`Mul128`]   | 8 MiB   | yes              | yes              | [`Avx2`] [`Ssse3`] |
+//! | [`Mul128`]   | 8 MiB   | yes              | yes              | [`Avx2`] [`Ssse3`] [`Neon`] [`Wasm`] |
 //! | [`Skew`]     | 128 kiB | yes              | yes              | all                |
 //!
 //! [`NoSimd`]: crate::engine::NoSimd
 //! [`Avx2`]: crate::engine::Avx2
 //! [`Ssse3`]: crate::engine::Ssse3
+//! [`Neon`]: crate::engine::Neon
+//! [`Wasm`]: crate::engine::Wasm
 //! [`Engine`]: crate::engine
 //!
 
