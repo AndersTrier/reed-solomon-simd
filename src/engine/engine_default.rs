@@ -112,6 +112,18 @@ impl Engine for DefaultEngine {
         self.0.mul(x, log_m);
     }
 
+    fn xor(&self, xs: &mut [[u8; 64]], ys: &[[u8; 64]]) {
+        self.0.xor(xs, ys);
+    }
+
+    fn xor_within(&self, data: &mut ShardsRefMut, x: usize, y: usize, count: usize) {
+        self.0.xor_within(data, x, y, count);
+    }
+
+    fn formal_derivative(&self, data: &mut ShardsRefMut) {
+        self.0.formal_derivative(data);
+    }
+
     fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {

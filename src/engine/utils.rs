@@ -35,38 +35,11 @@ pub fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
 pub fn xor(xs: &mut [[u8; 64]], ys: &[[u8; 64]]) {
     debug_assert_eq!(xs.len(), ys.len());
 
-    #[cfg(target_arch = "wasm32")]
-    {
-        use core::arch::wasm32::*;
-        for (x_chunk, y_chunk) in zip(xs.iter_mut(), ys.iter()) {
-            let x_ptr = x_chunk.as_mut_ptr();
-            let y_ptr = y_chunk.as_ptr();
-            unsafe {
-                v128_store(x_ptr.cast::<v128>(), v128_xor(v128_load(x_ptr.cast::<v128>()), v128_load(y_ptr.cast::<v128>())));
-                v128_store(x_ptr.add(16).cast::<v128>(), v128_xor(v128_load(x_ptr.add(16).cast::<v128>()), v128_load(y_ptr.add(16).cast::<v128>())));
-                v128_store(x_ptr.add(32).cast::<v128>(), v128_xor(v128_load(x_ptr.add(32).cast::<v128>()), v128_load(y_ptr.add(32).cast::<v128>())));
-                v128_store(x_ptr.add(48).cast::<v128>(), v128_xor(v128_load(x_ptr.add(48).cast::<v128>()), v128_load(y_ptr.add(48).cast::<v128>())));
-            }
+    for (x_chunk, y_chunk) in zip(xs.iter_mut(), ys.iter()) {
+        for (x, y) in zip(x_chunk.iter_mut(), y_chunk.iter()) {
+            *x ^= y;
         }
     }
-
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        for (x_chunk, y_chunk) in zip(xs.iter_mut(), ys.iter()) {
-            for (x, y) in zip(x_chunk.iter_mut(), y_chunk.iter()) {
-                *x ^= y;
-            }
-        }
-    }
-}
-
-/// `data[x .. x + count] ^= data[y .. y + count]`
-///
-/// Ranges must not overlap.
-#[inline(always)]
-pub fn xor_within(data: &mut ShardsRefMut, x: usize, y: usize, count: usize) {
-    let (xs, ys) = data.flat2_mut(x, y, count);
-    xor(xs, ys);
 }
 
 // ======================================================================
@@ -113,10 +86,3 @@ pub(crate) fn ifft_skew_end(
     engine.ifft(data, pos, size, truncated_size, pos + size);
 }
 
-// Formal derivative.
-pub(crate) fn formal_derivative(data: &mut ShardsRefMut) {
-    for i in 1..data.len() {
-        let width: usize = 1 << i.trailing_zeros();
-        xor_within(data, i - width, i, width);
-    }
-}

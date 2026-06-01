@@ -35,7 +35,7 @@
 //! [`rate`]: crate::rate
 
 pub(crate) use self::shards::Shards;
-pub(crate) use utils::{fft_skew_end, formal_derivative, ifft_skew_end, xor_within};
+pub(crate) use utils::{fft_skew_end, ifft_skew_end};
 
 pub use self::{
     engine_default::DefaultEngine, engine_naive::Naive, engine_nosimd::NoSimd, shards::ShardsRefMut,
@@ -166,9 +166,31 @@ pub trait Engine {
     {
         utils::eval_poly(erasures, truncated_size);
     }
+
+    /// `x[] ^= y[]`
+    fn xor(&self, xs: &mut [[u8; 64]], ys: &[[u8; 64]]) {
+        utils::xor(xs, ys);
+    }
+
+    /// `data[x .. x + count] ^= data[y .. y + count]`
+    ///
+    /// Ranges must not overlap.
+    fn xor_within(&self, data: &mut ShardsRefMut, x: usize, y: usize, count: usize) {
+        let (xs, ys) = data.flat2_mut(x, y, count);
+        self.xor(xs, ys);
+    }
+
+    /// Formal derivative.
+    fn formal_derivative(&self, data: &mut ShardsRefMut) {
+        for i in 1..data.len() {
+            let width: usize = 1 << i.trailing_zeros();
+            self.xor_within(data, i - width, i, width);
+        }
+    }
 }
 
 // ======================================================================
 // TESTS
 
 // Engines are tested indirectly via roundtrip tests of HighRate and LowRate.
+

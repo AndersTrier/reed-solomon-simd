@@ -74,6 +74,20 @@ impl Engine for Wasm {
     fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
         unsafe { Self::eval_poly_wasm(erasures, truncated_size) }
     }
+
+    fn xor(&self, xs: &mut [[u8; 64]], ys: &[[u8; 64]]) {
+        debug_assert_eq!(xs.len(), ys.len());
+        unsafe {
+            for (x_chunk, y_chunk) in zip(xs.iter_mut(), ys.iter()) {
+                let x_ptr = x_chunk.as_mut_ptr();
+                let y_ptr = y_chunk.as_ptr();
+                v128_store(x_ptr.cast::<v128>(), v128_xor(v128_load(x_ptr.cast::<v128>()), v128_load(y_ptr.cast::<v128>())));
+                v128_store(x_ptr.add(16).cast::<v128>(), v128_xor(v128_load(x_ptr.add(16).cast::<v128>()), v128_load(y_ptr.add(16).cast::<v128>())));
+                v128_store(x_ptr.add(32).cast::<v128>(), v128_xor(v128_load(x_ptr.add(32).cast::<v128>()), v128_load(y_ptr.add(32).cast::<v128>())));
+                v128_store(x_ptr.add(48).cast::<v128>(), v128_xor(v128_load(x_ptr.add(48).cast::<v128>()), v128_load(y_ptr.add(48).cast::<v128>())));
+            }
+        }
+    }
 }
 
 // ======================================================================
@@ -233,8 +247,8 @@ impl Wasm {
         // FIRST LAYER
 
         if log_m02 == GF_MODULUS {
-            utils::xor(s2, s0);
-            utils::xor(s3, s1);
+            self.xor(s2, s0);
+            self.xor(s3, s1);
         } else {
             unsafe {
                 self.fft_butterfly_partial(s0, s2, log_m02);
@@ -245,7 +259,7 @@ impl Wasm {
         // SECOND LAYER
 
         if log_m01 == GF_MODULUS {
-            utils::xor(s1, s0);
+            self.xor(s1, s0);
         } else {
             unsafe {
                 self.fft_butterfly_partial(s0, s1, log_m01);
@@ -253,7 +267,7 @@ impl Wasm {
         }
 
         if log_m23 == GF_MODULUS {
-            utils::xor(s3, s2);
+            self.xor(s3, s2);
         } else {
             unsafe {
                 self.fft_butterfly_partial(s2, s3, log_m23);
@@ -316,7 +330,7 @@ impl Wasm {
                 let (x, y) = data.dist2_mut(pos + r, 1);
 
                 if log_m == GF_MODULUS {
-                    utils::xor(y, x);
+                    self.xor(y, x);
                 } else {
                     unsafe {
                         self.fft_butterfly_partial(x, y, log_m);
@@ -396,7 +410,7 @@ impl Wasm {
         // FIRST LAYER
 
         if log_m01 == GF_MODULUS {
-            utils::xor(s1, s0);
+            self.xor(s1, s0);
         } else {
             unsafe {
                 self.ifft_butterfly_partial(s0, s1, log_m01);
@@ -404,7 +418,7 @@ impl Wasm {
         }
 
         if log_m23 == GF_MODULUS {
-            utils::xor(s3, s2);
+            self.xor(s3, s2);
         } else {
             unsafe {
                 self.ifft_butterfly_partial(s2, s3, log_m23);
@@ -414,8 +428,8 @@ impl Wasm {
         // SECOND LAYER
 
         if log_m02 == GF_MODULUS {
-            utils::xor(s2, s0);
-            utils::xor(s3, s1);
+            self.xor(s2, s0);
+            self.xor(s3, s1);
         } else {
             unsafe {
                 self.ifft_butterfly_partial(s0, s2, log_m02);
@@ -474,7 +488,7 @@ impl Wasm {
         if dist < size {
             let log_m = self.skew[dist + skew_delta - 1];
             if log_m == GF_MODULUS {
-                utils::xor_within(data, pos + dist, pos, dist);
+                self.xor_within(data, pos + dist, pos, dist);
             } else {
                 let (mut a, mut b) = data.split_at_mut(pos + dist);
                 for i in 0..dist {

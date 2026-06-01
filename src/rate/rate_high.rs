@@ -59,7 +59,7 @@ impl<E: Engine> RateEncoder<E> for HighRateEncoder<E> {
             let mut chunk_start = chunk_size;
             while chunk_start + chunk_size <= original_count {
                 engine::ifft_skew_end(engine, &mut work, chunk_start, chunk_size, chunk_size);
-                engine::xor_within(&mut work, 0, chunk_start, chunk_size);
+                engine.xor_within(&mut work, 0, chunk_start, chunk_size);
                 chunk_start += chunk_size;
             }
 
@@ -69,7 +69,7 @@ impl<E: Engine> RateEncoder<E> for HighRateEncoder<E> {
             if last_count > 0 {
                 work.zero(chunk_start + last_count..);
                 engine::ifft_skew_end(engine, &mut work, chunk_start, chunk_size, last_count);
-                engine::xor_within(&mut work, 0, chunk_start, chunk_size);
+                engine.xor_within(&mut work, 0, chunk_start, chunk_size);
             }
         }
 
@@ -233,7 +233,7 @@ impl<E: Engine> RateDecoder<E> for HighRateDecoder<E> {
         // IFFT / FORMAL DERIVATIVE / FFT
 
         self.engine.ifft(&mut work, 0, work_count, original_end, 0);
-        engine::formal_derivative(&mut work);
+        self.engine.formal_derivative(&mut work);
         self.engine.fft(&mut work, 0, work_count, original_end, 0);
 
         // REVEAL ERASURES
@@ -626,3 +626,4 @@ mod tests {
         }
     }
 }
+

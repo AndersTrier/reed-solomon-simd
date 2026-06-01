@@ -233,7 +233,7 @@ impl<E: Engine> RateDecoder<E> for LowRateDecoder<E> {
         // IFFT / FORMAL DERIVATIVE / FFT
 
         self.engine.ifft(&mut work, 0, work_count, recovery_end, 0);
-        engine::formal_derivative(&mut work);
+        self.engine.formal_derivative(&mut work);
         self.engine.fft(&mut work, 0, work_count, recovery_end, 0);
 
         // REVEAL ERASURES
@@ -626,3 +626,4 @@ mod tests {
         }
     }
 }
+
