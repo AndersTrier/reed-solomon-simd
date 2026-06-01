@@ -19,7 +19,8 @@ use crate::engine::Wasm;
 pub struct DefaultEngine(Box<dyn Engine + Send + Sync>);
 
 impl DefaultEngine {
-    /// Creates new [`DefaultEngine`] by chosing and initializing the underlying engine.
+    /// Creates new [`DefaultEngine`] by chosing and initializing the underlying
+    /// engine.
     ///
     /// On x86(-64) the engine is chosen in the following order of preference:
     /// 1. [`Avx2`]
@@ -36,12 +37,9 @@ impl DefaultEngine {
     ///
     /// # WebAssembly SIMD128 Runtime Detection
     ///
-    /// On `wasm32`, [`DefaultEngine`] detects SIMD128 support at runtime
-    /// using JavaScript interop (via `wasm-bindgen`). If SIMD128 is supported,
-    /// the [`Wasm`] engine is used; otherwise, it falls back to [`NoSimd`].
-    ///
-    /// This requires a runtime that supports `wasm-bindgen` (e.g., a browser
-    /// or Node.js with `wasm-bindgen` initialization).
+    /// On `wasm32`, [`DefaultEngine`] detects SIMD128 support at runtime. If
+    /// SIMD128 is supported, the [`Wasm`] engine is used; otherwise, it falls
+    /// back to [`NoSimd`].
     pub fn new() -> Self {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
