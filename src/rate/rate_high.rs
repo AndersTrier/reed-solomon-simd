@@ -201,7 +201,7 @@ impl<E: Engine> RateDecoder<E> for HighRateDecoder<E> {
 
         // EVALUATE POLYNOMIAL
 
-        E::eval_poly(&mut erasures, original_end);
+        self.engine.eval_poly(&mut erasures, original_end);
 
         // MULTIPLY SHARDS
 

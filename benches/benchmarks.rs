@@ -334,11 +334,11 @@ mod bench_impl {
         let mut data = [(); GF_ORDER].map(|_| rng.random());
 
         group.bench_function("eval_poly", |b| {
-            b.iter(|| E::eval_poly(black_box(&mut data), GF_ORDER))
+            b.iter(|| E::eval_poly(&engine, black_box(&mut data), GF_ORDER))
         });
 
         group.bench_function("eval_poly truncated", |b| {
-            b.iter(|| E::eval_poly(black_box(&mut data), GF_ORDER / 8))
+            b.iter(|| E::eval_poly(&engine, black_box(&mut data), GF_ORDER / 8))
         });
 
         // MUL

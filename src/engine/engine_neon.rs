@@ -69,7 +69,7 @@ impl Engine for Neon {
         }
     }
 
-    fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
+    fn eval_poly(&self, erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
         unsafe { Self::eval_poly_neon(erasures, truncated_size) }
     }
 }

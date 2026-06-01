@@ -160,10 +160,7 @@ pub trait Engine {
     // PROVIDED
 
     /// Evaluate polynomial.
-    fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize)
-    where
-        Self: Sized,
-    {
+    fn eval_poly(&self, erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
         utils::eval_poly(erasures, truncated_size);
     }
 

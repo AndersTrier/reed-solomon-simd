@@ -124,35 +124,7 @@ impl Engine for DefaultEngine {
         self.0.formal_derivative(data);
     }
 
-    fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-        {
-            cpufeatures::new!(has_avx2, "avx2");
-            if has_avx2::get() {
-                return Avx2::eval_poly(erasures, truncated_size);
-            }
-
-            cpufeatures::new!(has_ssse3, "ssse3");
-            if has_ssse3::get() {
-                return Ssse3::eval_poly(erasures, truncated_size);
-            }
-        }
-
-        #[cfg(target_arch = "aarch64")]
-        {
-            cpufeatures::new!(has_neon, "neon");
-            if has_neon::get() {
-                return Neon::eval_poly(erasures, truncated_size);
-            }
-        }
-
-        #[cfg(target_arch = "wasm32")]
-        {
-            if Wasm::wasm_simd128_supported() {
-                return Wasm::eval_poly(erasures, truncated_size);
-            }
-        }
-
-        NoSimd::eval_poly(erasures, truncated_size);
+    fn eval_poly(&self, erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
+        self.0.eval_poly(erasures, truncated_size);
     }
 }
