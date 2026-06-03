@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>reed-solomon-simd WASM Demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+    input[type=number] { width: 70px; }
+    button { cursor: pointer; padding: 4px 16px; }
+    pre { background: #f4f4f4; padding: 1rem; overflow-x: auto; }
+    .err { color: red; }
+  </style>
+</head>
+<body>
+  <h1>reed-solomon-simd WASM Demo</h1>
+
+  <div style="margin-bottom:1rem;">
+    Originals: <input type="number" id="originalCountInput" value="512" min="1" />
+    Recoveries: <input type="number" id="recoveryCountInput" value="102" min="1" />
+    Shard bytes: <input type="number" id="shardBytesInput" value="1024" min="2" step="2" />
+    Lost: <input type="number" id="lostCountInput" value="2" min="0" />
+    <button id="runBtn">Run</button>
+  </div>
+
+  <pre id="output">Click Run to start.</pre>
+
+  <script type="module">
+    import init, { encode, decode, supports } from './pkg/wasm_demo.js';
+
+    const outputEl = document.getElementById('output');
+    const runBtn   = document.getElementById('runBtn');
+
+    function log(msg) { outputEl.textContent = msg; }
+
+    async function run() {
+      try {
+        await init();
+
+        const originalCount = parseInt(document.getElementById('originalCountInput').value, 10);
+        const recoveryCount = parseInt(document.getElementById('recoveryCountInput').value, 10);
+        const shardBytes    = parseInt(document.getElementById('shardBytesInput').value, 10);
+        const lostCount     = parseInt(document.getElementById('lostCountInput').value, 10);
+
+        if (isNaN(originalCount) || originalCount < 1)
+          throw new Error("originalCount must be >= 1");
+        if (isNaN(recoveryCount) || recoveryCount < 1)
+          throw new Error("recoveryCount must be >= 1");
+        if (isNaN(shardBytes) || shardBytes < 2 || shardBytes % 2 !== 0)
+          throw new Error("shardBytes must be even and >= 2");
+        if (isNaN(lostCount) || lostCount < 0)
+          throw new Error("lostCount must be >= 0");
+        if (lostCount > originalCount)
+          throw new Error(`lostCount (${lostCount}) > originalCount (${originalCount})`);
+        if (!supports(originalCount, recoveryCount))
+          throw new Error(`Unsupported combination ${originalCount}:${recoveryCount}`);
+
+        // Create random original shards.
+        const originals = Array.from({ length: originalCount }, () => {
+          const s = new Uint8Array(shardBytes);
+          crypto.getRandomValues(s);
+          return s;
+        });
+
+        // Encode.
+        const t0 = performance.now();
+        const recoveries = encode(originals, recoveryCount);
+        const encMs = (performance.now() - t0).toFixed(3);
+
+        // Randomly lose `lostCount` original shards.
+        const indices = Array.from({ length: originalCount }, (_, i) => i);
+        const lostIndices = [];
+        for (let i = 0; i < lostCount; i++) {
+          const pos = Math.floor(Math.random() * indices.length);
+          lostIndices.push(indices.splice(pos, 1)[0]);
+        }
+        lostIndices.sort((a, b) => a - b);
+
+        const availableOriginals = indices.map(i => [i, originals[i]]);
+        const availableRecoveries = recoveries.map((r, i) => [i, r]);
+
+        // Decode.
+        const t1 = performance.now();
+        const restoredPairs = decode(originalCount, recoveryCount, shardBytes, availableOriginals, availableRecoveries);
+        const decMs = (performance.now() - t1).toFixed(3);
+
+        const restoredMap = Object.fromEntries(restoredPairs);
+
+        let result = `Encode: ${encMs} ms | Decode: ${decMs} ms\n`;
+        result += `Lost shards: ${lostIndices.join(', ')}\n\n`;
+
+        let allOk = true;
+        for (const idx of lostIndices) {
+          if (!(idx in restoredMap)) {
+            result += `[${idx}] NOT RESTORED\n`;
+            allOk = false;
+          } else {
+            const match = originals[idx].every((b, i) => b === restoredMap[idx][i]);
+            result += `[${idx}] ${match ? 'OK' : 'MISMATCH'}\n`;
+            if (!match) allOk = false;
+          }
+        }
+        result += allOk ? '\nAll shards restored correctly.' : '\nSome shards failed verification.';
+        log(result);
+
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        outputEl.innerHTML = `<span class="err">Error: ${msg}</span>`;
+      }
+    }
+
+    runBtn.addEventListener('click', run);
+  </script>
+</body>
+</html>
