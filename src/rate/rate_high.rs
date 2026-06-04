@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 
 use crate::{
-    engine::{self, Engine, GF_MODULUS, GF_ORDER},
+    engine::{Engine, GF_MODULUS, GF_ORDER},
     rate::{DecoderWork, EncoderWork, Rate, RateDecoder, RateEncoder},
     DecoderResult, EncoderResult, Error,
 };
@@ -51,14 +51,14 @@ impl<E: Engine> RateEncoder<E> for HighRateEncoder<E> {
         let first_count = core::cmp::min(original_count, chunk_size);
 
         work.zero(first_count..chunk_size);
-        engine::ifft_skew_end(engine, &mut work, 0, chunk_size, first_count);
+        engine.ifft(&mut work, 0, chunk_size, first_count, chunk_size);
 
         if original_count > chunk_size {
             // FULL CHUNKS
 
             let mut chunk_start = chunk_size;
             while chunk_start + chunk_size <= original_count {
-                engine::ifft_skew_end(engine, &mut work, chunk_start, chunk_size, chunk_size);
+                engine.ifft(&mut work, chunk_start, chunk_size, chunk_size, chunk_start + chunk_size);
                 engine.xor_within(&mut work, 0, chunk_start, chunk_size);
                 chunk_start += chunk_size;
             }
@@ -68,7 +68,7 @@ impl<E: Engine> RateEncoder<E> for HighRateEncoder<E> {
             let last_count = original_count % chunk_size;
             if last_count > 0 {
                 work.zero(chunk_start + last_count..);
-                engine::ifft_skew_end(engine, &mut work, chunk_start, chunk_size, last_count);
+                engine.ifft(&mut work, chunk_start, chunk_size, last_count, chunk_start + chunk_size);
                 engine.xor_within(&mut work, 0, chunk_start, chunk_size);
             }
         }

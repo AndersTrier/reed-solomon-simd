@@ -35,7 +35,6 @@
 //! [`rate`]: crate::rate
 
 pub(crate) use self::shards::Shards;
-pub(crate) use utils::{fft_skew_end, ifft_skew_end};
 
 pub use self::{
     engine_default::DefaultEngine, engine_naive::Naive, engine_nosimd::NoSimd, shards::ShardsRefMut,
