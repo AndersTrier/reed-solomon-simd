@@ -1,10 +1,56 @@
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
+
+#[cfg(target_arch = "wasm32")]
+struct Instant {
+    start: f64,
+}
+
+#[cfg(target_arch = "wasm32")]
+impl Instant {
+    fn now() -> Self {
+        Instant {
+            start: now()
+        }
+    }
+
+    fn elapsed(&self) -> std::time::Duration {
+        let elapsed_ms = now() - self.start;
+        std::time::Duration::from_secs_f64(elapsed_ms / 1000.0)
+    }
+}
+
+// Route print!/println! through process.stdout/stderr on wasm32.
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen::prelude::wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen::prelude::wasm_bindgen(js_namespace = globalThis, js_name = "process.stdout.write")]
+    fn stdout_write(s: &str);
+
+    #[wasm_bindgen::prelude::wasm_bindgen(js_namespace = globalThis, js_name = "process.stderr.write")]
+    fn stderr_write(s: &str);
+
+    #[wasm_bindgen::prelude::wasm_bindgen(js_namespace = globalThis, js_name = "performance.now")]
+    fn now() -> f64;
+}
+
+#[cfg(target_arch = "wasm32")]
+macro_rules! print {
+    ($($arg:tt)*) => {{
+        stdout_write(&format!($($arg)*));
+    }};
+}
+
+#[cfg(target_arch = "wasm32")]
+macro_rules! println {
+    ($($arg:tt)*) => {{
+        stdout_write(&format!($($arg)*));
+        stdout_write("\n");
+    }};
+}
 
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use reed_solomon_erasure::galois_16::ReedSolomon as ReedSolomon16;
-use reed_solomon_erasure::galois_8::ReedSolomon as ReedSolomon8;
-use reed_solomon_novelpoly::{CodeParams, WrappedShard};
 
 // ======================================================================
 // CONST
@@ -26,13 +72,18 @@ fn main() {
     for count in [8, 16, 32, 64, 128, 256, 512, 1024, 4 * 1024, 32 * 1024] {
         println!("\n{}:{} ({} kiB)", count, count, SHARD_BYTES / 1024);
         test_reed_solomon_simd(count);
+        #[cfg(not(target_arch = "wasm32"))]
         test_reed_solomon_16(count);
+        #[cfg(not(target_arch = "wasm32"))]
         test_reed_solomon_novelpoly(count);
         if count <= 128 {
+            #[cfg(not(target_arch = "wasm32"))]
             test_reed_solomon_erasure_8(count);
+            #[cfg(not(target_arch = "wasm32"))]
             test_leopard_codec(count);
         }
         if count <= 512 {
+            #[cfg(not(target_arch = "wasm32"))]
             test_reed_solomon_erasure_16(count);
         }
     }
@@ -91,6 +142,7 @@ fn test_reed_solomon_simd(count: usize) {
 // ======================================================================
 // reed-solomon-16
 
+#[cfg(not(target_arch = "wasm32"))]
 fn test_reed_solomon_16(count: usize) {
     // INIT
 
@@ -136,11 +188,12 @@ fn test_reed_solomon_16(count: usize) {
 // ======================================================================
 // reed-solomon-erasure
 
+#[cfg(not(target_arch = "wasm32"))]
 fn test_reed_solomon_erasure_8(count: usize) {
     // INIT
 
     let start = Instant::now();
-    let r = ReedSolomon8::new(count, count).unwrap();
+    let r = reed_solomon_erasure::galois_8::ReedSolomon::new(count, count).unwrap();
     let elapsed = start.elapsed();
     print!("> reed-solomon-erasure/8   {:9}", elapsed.as_micros());
 
@@ -185,11 +238,12 @@ fn test_reed_solomon_erasure_8(count: usize) {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn test_reed_solomon_erasure_16(count: usize) {
     // INIT
 
     let start = Instant::now();
-    let r = ReedSolomon16::new(count, count).unwrap();
+    let r = reed_solomon_erasure::galois_16::ReedSolomon::new(count, count).unwrap();
     let elapsed = start.elapsed();
     print!("> reed-solomon-erasure/16  {:9}", elapsed.as_micros());
 
@@ -240,11 +294,12 @@ fn test_reed_solomon_erasure_16(count: usize) {
 // ======================================================================
 // reed-solomon-novelpoly
 
+#[cfg(not(target_arch = "wasm32"))]
 fn test_reed_solomon_novelpoly(count: usize) {
     // INIT
 
     let start = Instant::now();
-    let r = CodeParams::derive_parameters(2 * count, count)
+    let r = reed_solomon_novelpoly::CodeParams::derive_parameters(2 * count, count)
         .unwrap()
         .make_encoder();
     let elapsed = start.elapsed();
@@ -259,7 +314,9 @@ fn test_reed_solomon_novelpoly(count: usize) {
     // ENCODE
 
     let start = Instant::now();
-    let encoded = r.encode::<WrappedShard>(&original).unwrap();
+    let encoded = r
+        .encode::<reed_solomon_novelpoly::WrappedShard>(&original)
+        .unwrap();
     let elapsed = start.elapsed();
     print!("{:14}", elapsed.as_micros());
 
@@ -288,6 +345,7 @@ fn test_reed_solomon_novelpoly(count: usize) {
 // ======================================================================
 // leopard-codec
 
+#[cfg(not(target_arch = "wasm32"))]
 fn test_leopard_codec(count: usize) {
     // INIT
 

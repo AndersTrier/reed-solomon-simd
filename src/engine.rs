@@ -22,6 +22,8 @@
 //!     - Optimized engine that takes advantage of the x86(-64) SSSE3 SIMD instructions.
 //! - [`Neon`]
 //!     - Optimized engine that takes advantage of the `AArch64` Neon SIMD instructions.
+//! - [`Wasm`]
+//!     - Optimized engine that takes advantage of the WebAssembly SIMD128 instructions.
 //! - [`DefaultEngine`]
 //!     - Default engine which is used when no specific engine is given.
 //!     - Automatically selects best engine at runtime.
@@ -33,7 +35,6 @@
 //! [`rate`]: crate::rate
 
 pub(crate) use self::shards::Shards;
-pub(crate) use utils::{fft_skew_end, formal_derivative, ifft_skew_end, xor_within};
 
 pub use self::{
     engine_default::DefaultEngine, engine_naive::Naive, engine_nosimd::NoSimd, shards::ShardsRefMut,
@@ -44,6 +45,9 @@ pub use self::{engine_avx2::Avx2, engine_ssse3::Ssse3};
 
 #[cfg(target_arch = "aarch64")]
 pub use self::engine_neon::Neon;
+
+#[cfg(target_arch = "wasm32")]
+pub use self::engine_wasm::Wasm;
 
 mod engine_default;
 mod engine_naive;
@@ -56,6 +60,9 @@ mod engine_ssse3;
 
 #[cfg(target_arch = "aarch64")]
 mod engine_neon;
+
+#[cfg(target_arch = "wasm32")]
+mod engine_wasm;
 
 mod fwht;
 mod shards;
@@ -152,11 +159,29 @@ pub trait Engine {
     // PROVIDED
 
     /// Evaluate polynomial.
-    fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize)
-    where
-        Self: Sized,
-    {
+    fn eval_poly(&self, erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
         utils::eval_poly(erasures, truncated_size);
+    }
+
+    /// `x[] ^= y[]`
+    fn xor(&self, xs: &mut [[u8; 64]], ys: &[[u8; 64]]) {
+        utils::xor(xs, ys);
+    }
+
+    /// `data[x .. x + count] ^= data[y .. y + count]`
+    ///
+    /// Ranges must not overlap.
+    fn xor_within(&self, data: &mut ShardsRefMut, x: usize, y: usize, count: usize) {
+        let (xs, ys) = data.flat2_mut(x, y, count);
+        self.xor(xs, ys);
+    }
+
+    /// Formal derivative.
+    fn formal_derivative(&self, data: &mut ShardsRefMut) {
+        for i in 1..data.len() {
+            let width: usize = 1 << i.trailing_zeros();
+            self.xor_within(data, i - width, i, width);
+        }
     }
 }
 
@@ -164,3 +189,4 @@ pub trait Engine {
 // TESTS
 
 // Engines are tested indirectly via roundtrip tests of HighRate and LowRate.
+

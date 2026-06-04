@@ -13,6 +13,12 @@ use reed_solomon_simd::engine::{Avx2, Ssse3};
 #[cfg(target_arch = "aarch64")]
 use reed_solomon_simd::engine::Neon;
 
+#[cfg(target_arch = "wasm32")]
+use reed_solomon_simd::engine::Wasm;
+
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen_test::wasm_bindgen_test;
+
 // ======================================================================
 // TESTS - HELPERS
 
@@ -228,6 +234,17 @@ fn aarch64_neon() -> Result<(), Error> {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen_test]
+fn wasm_simd128() -> Result<(), Error> {
+    if Wasm::wasm_simd128_supported() {
+        compare_to_nosimd::<Wasm>(128, 32, 64)
+    } else {
+        eprintln!("Skipping test: SIMD128 not supported in this WebAssembly runtime.");
+        Ok(())
+    }
+}
+
 // ======================================================================
 // TESTS - IGNORED
 //
@@ -289,6 +306,26 @@ fn aarch64_neon_random_roundtrips() -> Result<(), Error> {
         let (original_count, recovery_count) = random_shard_count(&mut rng);
         let chunk_count: usize = rng.random_range(1..=3);
         compare_to_nosimd::<Neon>(original_count, recovery_count, chunk_count * 64)?;
+    }
+
+    Ok(())
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen_test]
+#[ignore]
+fn wasm_simd128_random_roundtrips() -> Result<(), Error> {
+    if !Wasm::wasm_simd128_supported() {
+        eprintln!("Skipping test: SIMD128 not supported in this WebAssembly runtime.");
+        return Ok(());
+    }
+
+    let mut rng = ChaCha8Rng::from_seed([0; 32]);
+
+    for _ in 0..5 {
+        let (original_count, recovery_count) = random_shard_count(&mut rng);
+        let chunk_count: usize = rng.random_range(1..=3);
+        compare_to_nosimd::<Wasm>(original_count, recovery_count, chunk_count * 64)?;
     }
 
     Ok(())

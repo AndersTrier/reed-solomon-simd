@@ -1,4 +1,5 @@
-use crate::engine::{Engine, GfElement, NoSimd, ShardsRefMut, GF_ORDER};
+use crate::engine::NoSimd;
+use crate::engine::{Engine, GfElement, ShardsRefMut, GF_ORDER};
 #[cfg(not(feature = "std"))]
 use alloc::boxed::Box;
 
@@ -8,6 +9,9 @@ use crate::engine::{Avx2, Ssse3};
 #[cfg(target_arch = "aarch64")]
 use crate::engine::Neon;
 
+#[cfg(target_arch = "wasm32")]
+use crate::engine::Wasm;
+
 // ======================================================================
 // DefaultEngine - PUBLIC
 
@@ -15,7 +19,8 @@ use crate::engine::Neon;
 pub struct DefaultEngine(Box<dyn Engine + Send + Sync>);
 
 impl DefaultEngine {
-    /// Creates new [`DefaultEngine`] by chosing and initializing the underlying engine.
+    /// Creates new [`DefaultEngine`] by chosing and initializing the underlying
+    /// engine.
     ///
     /// On x86(-64) the engine is chosen in the following order of preference:
     /// 1. [`Avx2`]
@@ -25,6 +30,16 @@ impl DefaultEngine {
     /// On `AArch64` the engine is chosen in the following order of preference:
     /// 1. [`Neon`]
     /// 2. [`NoSimd`]
+    ///
+    /// On `wasm32` the engine is chosen in the following order of preference:
+    /// 1. [`Wasm`] (if WebAssembly SIMD128 is supported at runtime)
+    /// 2. [`NoSimd`]
+    ///
+    /// # WebAssembly SIMD128 Runtime Detection
+    ///
+    /// On `wasm32`, [`DefaultEngine`] detects SIMD128 support at runtime. If
+    /// SIMD128 is supported, the [`Wasm`] engine is used; otherwise, it falls
+    /// back to [`NoSimd`].
     pub fn new() -> Self {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
@@ -44,6 +59,13 @@ impl DefaultEngine {
             cpufeatures::new!(has_neon, "neon");
             if has_neon::get() {
                 return Self(Box::new(Neon::new()));
+            }
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            if Wasm::wasm_simd128_supported() {
+                return Self(Box::new(Wasm::new()));
             }
         }
 
@@ -90,28 +112,19 @@ impl Engine for DefaultEngine {
         self.0.mul(x, log_m);
     }
 
-    fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
-        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-        {
-            cpufeatures::new!(has_avx2, "avx2");
-            if has_avx2::get() {
-                return Avx2::eval_poly(erasures, truncated_size);
-            }
+    fn xor(&self, xs: &mut [[u8; 64]], ys: &[[u8; 64]]) {
+        self.0.xor(xs, ys);
+    }
 
-            cpufeatures::new!(has_ssse3, "ssse3");
-            if has_ssse3::get() {
-                return Ssse3::eval_poly(erasures, truncated_size);
-            }
-        }
+    fn xor_within(&self, data: &mut ShardsRefMut, x: usize, y: usize, count: usize) {
+        self.0.xor_within(data, x, y, count);
+    }
 
-        #[cfg(target_arch = "aarch64")]
-        {
-            cpufeatures::new!(has_neon, "neon");
-            if has_neon::get() {
-                return Neon::eval_poly(erasures, truncated_size);
-            }
-        }
+    fn formal_derivative(&self, data: &mut ShardsRefMut) {
+        self.0.formal_derivative(data);
+    }
 
-        NoSimd::eval_poly(erasures, truncated_size);
+    fn eval_poly(&self, erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
+        self.0.eval_poly(erasures, truncated_size);
     }
 }

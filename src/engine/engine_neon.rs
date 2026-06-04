@@ -69,7 +69,7 @@ impl Engine for Neon {
         }
     }
 
-    fn eval_poly(erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
+    fn eval_poly(&self, erasures: &mut [GfElement; GF_ORDER], truncated_size: usize) {
         unsafe { Self::eval_poly_neon(erasures, truncated_size) }
     }
 }
@@ -238,8 +238,8 @@ impl Neon {
         // FIRST LAYER
 
         if log_m02 == GF_MODULUS {
-            utils::xor(s2, s0);
-            utils::xor(s3, s1);
+            self.xor(s2, s0);
+            self.xor(s3, s1);
         } else {
             self.fft_butterfly_partial(s0, s2, log_m02);
             self.fft_butterfly_partial(s1, s3, log_m02);
@@ -248,13 +248,13 @@ impl Neon {
         // SECOND LAYER
 
         if log_m01 == GF_MODULUS {
-            utils::xor(s1, s0);
+            self.xor(s1, s0);
         } else {
             self.fft_butterfly_partial(s0, s1, log_m01);
         }
 
         if log_m23 == GF_MODULUS {
-            utils::xor(s3, s2);
+            self.xor(s3, s2);
         } else {
             self.fft_butterfly_partial(s2, s3, log_m23);
         }
@@ -315,7 +315,7 @@ impl Neon {
                 let (x, y) = data.dist2_mut(pos + r, 1);
 
                 if log_m == GF_MODULUS {
-                    utils::xor(y, x);
+                    self.xor(y, x);
                 } else {
                     self.fft_butterfly_partial(x, y, log_m);
                 }
@@ -390,13 +390,13 @@ impl Neon {
         // FIRST LAYER
 
         if log_m01 == GF_MODULUS {
-            utils::xor(s1, s0);
+            self.xor(s1, s0);
         } else {
             self.ifft_butterfly_partial(s0, s1, log_m01);
         }
 
         if log_m23 == GF_MODULUS {
-            utils::xor(s3, s2);
+            self.xor(s3, s2);
         } else {
             self.ifft_butterfly_partial(s2, s3, log_m23);
         }
@@ -404,8 +404,8 @@ impl Neon {
         // SECOND LAYER
 
         if log_m02 == GF_MODULUS {
-            utils::xor(s2, s0);
-            utils::xor(s3, s1);
+            self.xor(s2, s0);
+            self.xor(s3, s1);
         } else {
             self.ifft_butterfly_partial(s0, s2, log_m02);
             self.ifft_butterfly_partial(s1, s3, log_m02);
@@ -462,7 +462,7 @@ impl Neon {
         if dist < size {
             let log_m = self.skew[dist + skew_delta - 1];
             if log_m == GF_MODULUS {
-                utils::xor_within(data, pos + dist, pos, dist);
+                self.xor_within(data, pos + dist, pos, dist);
             } else {
                 let (mut a, mut b) = data.split_at_mut(pos + dist);
                 for i in 0..dist {
