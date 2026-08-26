@@ -2,7 +2,7 @@
 //!
 //! [`Engine`]: crate::engine::Engine
 
-use crate::engine::{fwht, tables, Engine, GfElement, ShardsRefMut, GF_BITS, GF_ORDER};
+use crate::engine::{fwht, tables, Engine, GfElement, ShardStorage, GF_BITS, GF_ORDER};
 use core::iter::zip;
 
 // ======================================================================
@@ -44,11 +44,14 @@ pub fn xor(xs: &mut [[u8; 64]], ys: &[[u8; 64]]) {
 
 /// `data[x .. x + count] ^= data[y .. y + count]`
 ///
-/// Ranges must not overlap.
+/// # Safety
+///
+/// Shard-ranges `x .. x + count` and `y .. y + count` must be within `data.len()` and must not
+/// overlap.
 #[inline(always)]
-pub fn xor_within(data: &mut ShardsRefMut, x: usize, y: usize, count: usize) {
-    let (xs, ys) = data.flat2_mut(x, y, count);
-    xor(xs, ys);
+pub unsafe fn xor_within<S: ShardStorage>(data: &mut S, x: usize, y: usize, count: usize) {
+    // SAFETY: Guaranteed by the caller.
+    unsafe { data.xor_within(x, y, count) }
 }
 
 // ======================================================================
@@ -73,9 +76,9 @@ pub(crate) fn sub_mod(x: GfElement, y: GfElement) -> GfElement {
 
 /// FFT with `skew_delta = pos + size`.
 #[inline(always)]
-pub(crate) fn fft_skew_end(
+pub(crate) fn fft_skew_end<S: ShardStorage>(
     engine: &impl Engine,
-    data: &mut ShardsRefMut,
+    data: &mut S,
     pos: usize,
     size: usize,
     truncated_size: usize,
@@ -85,9 +88,9 @@ pub(crate) fn fft_skew_end(
 
 /// IFFT with `skew_delta = pos + size`.
 #[inline(always)]
-pub(crate) fn ifft_skew_end(
+pub(crate) fn ifft_skew_end<S: ShardStorage>(
     engine: &impl Engine,
-    data: &mut ShardsRefMut,
+    data: &mut S,
     pos: usize,
     size: usize,
     truncated_size: usize,
@@ -96,9 +99,16 @@ pub(crate) fn ifft_skew_end(
 }
 
 // Formal derivative.
-pub(crate) fn formal_derivative(data: &mut ShardsRefMut) {
+//
+// `data.len()` must be a power of two.
+pub(crate) fn formal_derivative<S: ShardStorage>(data: &mut S) {
+    debug_assert!(data.len().is_power_of_two());
+
     for i in 1..data.len() {
         let width: usize = 1 << i.trailing_zeros();
-        xor_within(data, i - width, i, width);
+        // SAFETY: `width` is at most `i` and `i + width <= data.len()` because `data.len()` is a
+        // power of two, so shard-ranges `i - width .. i` and `i .. i + width` are within bounds and
+        // don't overlap
+        unsafe { xor_within(data, i - width, i, width) };
     }
 }

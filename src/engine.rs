@@ -36,7 +36,10 @@ pub(crate) use self::shards::Shards;
 pub(crate) use utils::{fft_skew_end, formal_derivative, ifft_skew_end, xor_within};
 
 pub use self::{
-    engine_default::DefaultEngine, engine_naive::Naive, engine_nosimd::NoSimd, shards::ShardsRefMut,
+    engine_default::DefaultEngine,
+    engine_naive::Naive,
+    engine_nosimd::NoSimd,
+    shards::{ShardStorage, ShardsRefMut},
 };
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -116,9 +119,9 @@ pub trait Engine {
     ///     - `data[pos + truncated_size .. pos + size]`
     ///       contains valid FFT result if this contained
     ///       only `0u8`:s and garbage otherwise.
-    fn fft(
+    fn fft<S: ShardStorage>(
         &self,
-        data: &mut ShardsRefMut,
+        data: &mut S,
         pos: usize,
         size: usize,
         truncated_size: usize,
@@ -136,9 +139,9 @@ pub trait Engine {
     ///     - `data[pos + truncated_size .. pos + size]`
     ///       contains valid IFFT result if this contained
     ///       only `0u8`:s and garbage otherwise.
-    fn ifft(
+    fn ifft<S: ShardStorage>(
         &self,
-        data: &mut ShardsRefMut,
+        data: &mut S,
         pos: usize,
         size: usize,
         truncated_size: usize,

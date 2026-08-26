@@ -7,7 +7,7 @@ use core::arch::x86_64::*;
 
 use crate::engine::{
     tables::{self, Mul128, Multiply128lutT, Skew},
-    utils, Engine, GfElement, ShardsRefMut, GF_MODULUS, GF_ORDER,
+    utils, Engine, GfElement, ShardStorage, GF_MODULUS, GF_ORDER,
 };
 
 // ======================================================================
@@ -42,9 +42,9 @@ impl Avx2 {
 }
 
 impl Engine for Avx2 {
-    fn fft(
+    fn fft<S: ShardStorage>(
         &self,
-        data: &mut ShardsRefMut,
+        data: &mut S,
         pos: usize,
         size: usize,
         truncated_size: usize,
@@ -55,9 +55,9 @@ impl Engine for Avx2 {
         }
     }
 
-    fn ifft(
+    fn ifft<S: ShardStorage>(
         &self,
-        data: &mut ShardsRefMut,
+        data: &mut S,
         pos: usize,
         size: usize,
         truncated_size: usize,
@@ -247,16 +247,18 @@ impl Avx2 {
     }
 
     #[inline(always)]
-    fn fft_butterfly_two_layers(
+    fn fft_butterfly_two_layers<S: ShardStorage>(
         &self,
-        data: &mut ShardsRefMut,
+        data: &mut S,
         pos: usize,
         dist: usize,
         log_m01: GfElement,
         log_m23: GfElement,
         log_m02: GfElement,
     ) {
-        let (s0, s1, s2, s3) = data.dist4_mut(pos, dist);
+        // SAFETY: Caller guarantees that shards `pos`, `pos + dist`, `pos + dist * 2` and
+        // `pos + dist * 3` exist and are distinct
+        let (s0, s1, s2, s3) = unsafe { data.dist4_mut(pos, dist) };
 
         // FIRST LAYER
 
@@ -284,9 +286,9 @@ impl Avx2 {
     }
 
     #[target_feature(enable = "avx2")]
-    unsafe fn fft_private_avx2(
+    unsafe fn fft_private_avx2<S: ShardStorage>(
         &self,
-        data: &mut ShardsRefMut,
+        data: &mut S,
         pos: usize,
         size: usize,
         truncated_size: usize,
@@ -297,9 +299,9 @@ impl Avx2 {
     }
 
     #[inline(always)]
-    fn fft_private(
+    fn fft_private<S: ShardStorage>(
         &self,
-        data: &mut ShardsRefMut,
+        data: &mut S,
         pos: usize,
         size: usize,
         truncated_size: usize,
@@ -335,7 +337,8 @@ impl Avx2 {
             while r < truncated_size {
                 let log_m = self.skew[r + skew_delta];
 
-                let (x, y) = data.dist2_mut(pos + r, 1);
+                // SAFETY: Shards `pos + r` and `pos + r + 1` exist and are distinct
+                let (x, y) = unsafe { data.dist2_mut(pos + r, 1) };
 
                 if log_m == GF_MODULUS {
                     utils::xor(y, x);
@@ -390,16 +393,18 @@ impl Avx2 {
     }
 
     #[inline(always)]
-    fn ifft_butterfly_two_layers(
+    fn ifft_butterfly_two_layers<S: ShardStorage>(
         &self,
-        data: &mut ShardsRefMut,
+        data: &mut S,
         pos: usize,
         dist: usize,
         log_m01: GfElement,
         log_m23: GfElement,
         log_m02: GfElement,
     ) {
-        let (s0, s1, s2, s3) = data.dist4_mut(pos, dist);
+        // SAFETY: Caller guarantees that shards `pos`, `pos + dist`, `pos + dist * 2` and
+        // `pos + dist * 3` exist and are distinct
+        let (s0, s1, s2, s3) = unsafe { data.dist4_mut(pos, dist) };
 
         // FIRST LAYER
 
@@ -427,9 +432,9 @@ impl Avx2 {
     }
 
     #[target_feature(enable = "avx2")]
-    unsafe fn ifft_private_avx2(
+    unsafe fn ifft_private_avx2<S: ShardStorage>(
         &self,
-        data: &mut ShardsRefMut,
+        data: &mut S,
         pos: usize,
         size: usize,
         truncated_size: usize,
@@ -440,9 +445,9 @@ impl Avx2 {
     }
 
     #[inline(always)]
-    fn ifft_private(
+    fn ifft_private<S: ShardStorage>(
         &self,
-        data: &mut ShardsRefMut,
+        data: &mut S,
         pos: usize,
         size: usize,
         truncated_size: usize,
@@ -476,15 +481,14 @@ impl Avx2 {
         if dist < size {
             let log_m = self.skew[dist + skew_delta - 1];
             if log_m == GF_MODULUS {
-                utils::xor_within(data, pos + dist, pos, dist);
+                // SAFETY: Shard-ranges `pos + dist .. pos + dist * 2` and `pos .. pos + dist` are
+                // within bounds and don't overlap
+                unsafe { utils::xor_within(data, pos + dist, pos, dist) };
             } else {
-                let (mut a, mut b) = data.split_at_mut(pos + dist);
                 for i in 0..dist {
-                    self.ifft_butterfly_partial(
-                        &mut a[pos + i], // data[pos + i]
-                        &mut b[i],       // data[pos + i + dist]
-                        log_m,
-                    );
+                    // SAFETY: Shards `pos + i` and `pos + i + dist` exist and are distinct
+                    let (x, y) = unsafe { data.dist2_mut(pos + i, dist) };
+                    self.ifft_butterfly_partial(x, y, log_m);
                 }
             }
         }

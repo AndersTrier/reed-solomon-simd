@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 
 use crate::{
-    engine::{self, Engine, GF_MODULUS, GF_ORDER},
+    engine::{self, Engine, ShardStorage, GF_MODULUS, GF_ORDER},
     rate::{DecoderWork, EncoderWork, Rate, RateDecoder, RateEncoder},
     DecoderResult, EncoderResult, Error,
 };
@@ -58,7 +58,9 @@ impl<E: Engine> RateEncoder<E> for LowRateEncoder<E> {
 
         let mut chunk_start = chunk_size;
         while chunk_start < recovery_count {
-            work.copy_within(0, chunk_start, chunk_size);
+            // SAFETY: Shard-ranges `0 .. chunk_size` and
+            // `chunk_start .. chunk_start + chunk_size` are within bounds and don't overlap
+            unsafe { work.copy_within(0, chunk_start, chunk_size) };
             chunk_start += chunk_size;
         }
 
