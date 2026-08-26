@@ -1,6 +1,6 @@
 use crate::engine::{
     tables::{self, Exp, Log, Skew},
-    utils, Engine, GfElement, ShardsRefMut, GF_MODULUS,
+    utils, Engine, GfElement, ShardStorage, GF_MODULUS,
 };
 
 // ======================================================================
@@ -40,9 +40,9 @@ impl Naive {
 }
 
 impl Engine for Naive {
-    fn fft(
+    fn fft<S: ShardStorage>(
         &self,
-        data: &mut ShardsRefMut,
+        data: &mut S,
         pos: usize,
         size: usize,
         truncated_size: usize,
@@ -57,7 +57,8 @@ impl Engine for Naive {
             while r < truncated_size {
                 let log_m = self.skew[r + dist + skew_delta - 1];
                 for i in r..r + dist {
-                    let (a, b) = data.dist2_mut(pos + i, dist);
+                    // SAFETY: Shards `pos + i` and `pos + i + dist` exist and are distinct
+                    let (a, b) = unsafe { data.dist2_mut(pos + i, dist) };
 
                     // FFT BUTTERFLY
 
@@ -72,9 +73,9 @@ impl Engine for Naive {
         }
     }
 
-    fn ifft(
+    fn ifft<S: ShardStorage>(
         &self,
-        data: &mut ShardsRefMut,
+        data: &mut S,
         pos: usize,
         size: usize,
         truncated_size: usize,
@@ -89,7 +90,8 @@ impl Engine for Naive {
             while r < truncated_size {
                 let log_m = self.skew[r + dist + skew_delta - 1];
                 for i in r..r + dist {
-                    let (a, b) = data.dist2_mut(pos + i, dist);
+                    // SAFETY: Shards `pos + i` and `pos + i + dist` exist and are distinct
+                    let (a, b) = unsafe { data.dist2_mut(pos + i, dist) };
 
                     // IFFT BUTTERFLY
 
