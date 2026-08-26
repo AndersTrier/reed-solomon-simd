@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use crate::{
     engine::{self, Engine, GF_MODULUS, GF_ORDER},
-    rate::{DecoderWork, EncoderWork, Rate, RateDecoder, RateEncoder},
+    rate::{DecoderWork, EncoderWork, Rate, RateDecoder, RateEncoder, ReceivedShards},
     DecoderResult, EncoderResult, Error,
 };
 
@@ -185,18 +185,14 @@ impl<E: Engine> RateDecoder<E> for HighRateDecoder<E> {
 
         let mut erasures = [0; GF_ORDER];
 
-        for i in 0..recovery_count {
-            if !received[i] {
-                erasures[i] = 1;
-            }
+        for index in received.missing_in(0..recovery_count) {
+            erasures[index] = 1;
         }
 
         erasures[recovery_count..chunk_size].fill(1);
 
-        for i in chunk_size..original_end {
-            if !received[i] {
-                erasures[i] = 1;
-            }
+        for index in received.missing_in(chunk_size..original_end) {
+            erasures[index] = 1;
         }
 
         // EVALUATE POLYNOMIAL
@@ -211,7 +207,7 @@ impl<E: Engine> RateDecoder<E> for HighRateDecoder<E> {
         // work[original_end   ..               ] = 0
 
         for i in 0..recovery_count {
-            if received[i] {
+            if received.received(i) {
                 self.engine.mul(&mut work[i], erasures[i]);
             } else {
                 work[i].fill([0; 64]);
@@ -221,7 +217,7 @@ impl<E: Engine> RateDecoder<E> for HighRateDecoder<E> {
         work.zero(recovery_count..chunk_size);
 
         for i in chunk_size..original_end {
-            if received[i] {
+            if received.received(i) {
                 self.engine.mul(&mut work[i], erasures[i]);
             } else {
                 work[i].fill([0; 64]);
@@ -239,7 +235,7 @@ impl<E: Engine> RateDecoder<E> for HighRateDecoder<E> {
         // REVEAL ERASURES
 
         for i in chunk_size..original_end {
-            if !received[i] {
+            if !received.received(i) {
                 self.engine.mul(&mut work[i], GF_MODULUS - erasures[i]);
             }
         }

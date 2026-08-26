@@ -102,7 +102,7 @@ impl EncoderWork {
         shard_bytes: usize,
         work_count: usize,
     ) {
-        assert!(shard_bytes % 2 == 0);
+        assert!(shard_bytes.is_multiple_of(2));
 
         self.original_count = original_count;
         self.recovery_count = recovery_count;
