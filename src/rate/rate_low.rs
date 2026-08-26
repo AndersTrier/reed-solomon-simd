@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use crate::{
     engine::{self, Engine, GF_MODULUS, GF_ORDER},
-    rate::{DecoderWork, EncoderWork, Rate, RateDecoder, RateEncoder},
+    rate::{DecoderWork, EncoderWork, Rate, RateDecoder, RateEncoder, ReceivedShards},
     DecoderResult, EncoderResult, Error,
 };
 
@@ -185,16 +185,12 @@ impl<E: Engine> RateDecoder<E> for LowRateDecoder<E> {
 
         let mut erasures = [0; GF_ORDER];
 
-        for i in 0..original_count {
-            if !received[i] {
-                erasures[i] = 1;
-            }
+        for index in received.missing_in(0..original_count) {
+            erasures[index] = 1;
         }
 
-        for i in chunk_size..recovery_end {
-            if !received[i] {
-                erasures[i] = 1;
-            }
+        for index in received.missing_in(chunk_size..recovery_end) {
+            erasures[index] = 1;
         }
 
         erasures[recovery_end..].fill(1);
@@ -211,7 +207,7 @@ impl<E: Engine> RateDecoder<E> for LowRateDecoder<E> {
         // work[recovery_end   ..               ] = 0
 
         for i in 0..original_count {
-            if received[i] {
+            if received.received(i) {
                 self.engine.mul(&mut work[i], erasures[i]);
             } else {
                 work[i].fill([0; 64]);
@@ -221,7 +217,7 @@ impl<E: Engine> RateDecoder<E> for LowRateDecoder<E> {
         work.zero(original_count..chunk_size);
 
         for i in chunk_size..recovery_end {
-            if received[i] {
+            if received.received(i) {
                 self.engine.mul(&mut work[i], erasures[i]);
             } else {
                 work[i].fill([0; 64]);
@@ -239,7 +235,7 @@ impl<E: Engine> RateDecoder<E> for LowRateDecoder<E> {
         // REVEAL ERASURES
 
         for i in 0..original_count {
-            if !received[i] {
+            if !received.received(i) {
                 self.engine.mul(&mut work[i], GF_MODULUS - erasures[i]);
             }
         }
