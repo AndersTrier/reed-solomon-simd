@@ -8,7 +8,7 @@ use reed_solomon_simd::rate::{
 use reed_solomon_simd::Error;
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-use reed_solomon_simd::engine::{Avx2, Ssse3};
+use reed_solomon_simd::engine::{Avx2, Avx512, Ssse3};
 
 #[cfg(target_arch = "aarch64")]
 use reed_solomon_simd::engine::Neon;
@@ -213,6 +213,20 @@ fn x86_avx2() -> Result<(), Error> {
         compare_to_nosimd::<Avx2>(128, 32, 64)
     } else {
         eprintln!("Skipping test: AVX2 not supported on this processor.");
+        Ok(())
+    }
+}
+
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[test]
+fn x86_avx512() -> Result<(), Error> {
+    if is_x86_feature_detected!("avx512f")
+        && is_x86_feature_detected!("avx512vl")
+        && is_x86_feature_detected!("avx512bw")
+    {
+        compare_to_nosimd::<Avx512>(128, 32, 64)
+    } else {
+        eprintln!("Skipping test: AVX512 not supported on this processor.");
         Ok(())
     }
 }
