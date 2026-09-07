@@ -18,6 +18,12 @@
 //!     - Basic optimized engine without SIMD so that it works on all CPUs.
 //! - [`Avx2`]
 //!     - Optimized engine that takes advantage of the x86(-64) AVX2 SIMD instructions.
+//! - [`Avx2Gfni`]
+//!     - Optimized engine that takes advantage of the x86(-64) AVX2 and GFNI instructions.
+//! - [`Avx512`]
+//!     - Optimized engine that takes advantage of the x86(-64) AVX-512 SIMD instructions.
+//! - [`Avx512Gfni`]
+//!     - Optimized engine that takes advantage of the x86(-64) AVX-512 and GFNI instructions.
 //! - [`Ssse3`]
 //!     - Optimized engine that takes advantage of the x86(-64) SSSE3 SIMD instructions.
 //! - [`Neon`]
@@ -40,7 +46,10 @@ pub use self::{
 };
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-pub use self::{engine_avx2::Avx2, engine_avx512::Avx512, engine_ssse3::Ssse3};
+pub use self::{
+    engine_avx2::Avx2, engine_avx2gfni::Avx2Gfni, engine_avx512::Avx512,
+    engine_avx512gfni::Avx512Gfni, engine_ssse3::Ssse3,
+};
 
 #[cfg(target_arch = "aarch64")]
 pub use self::engine_neon::Neon;
@@ -50,9 +59,15 @@ mod engine_naive;
 mod engine_nosimd;
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+mod calibrate;
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod engine_avx2;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+mod engine_avx2gfni;
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod engine_avx512;
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+mod engine_avx512gfni;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod engine_ssse3;
 

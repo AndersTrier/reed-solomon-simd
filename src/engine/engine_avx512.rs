@@ -1,9 +1,9 @@
-use std::iter::zip;
+use core::iter::zip;
 
 #[cfg(target_arch = "x86")]
-use std::arch::x86::*;
+use core::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
-use std::arch::x86_64::*;
+use core::arch::x86_64::*;
 
 use crate::engine::{
     tables::{self, Mul128, Multiply128lutT, Skew},
@@ -492,12 +492,27 @@ mod tests {
     use rand::{Rng, SeedableRng};
     use rand_chacha::ChaCha8Rng;
 
+    // These tests run the engines directly, so they have to check for the
+    // instructions themselves. Nothing is printed when they bail out, because
+    // the crate is `no_std` without the `std` feature: the integration tests
+    // cover the same engines and do report skipping.
+    macro_rules! require {
+        ($name:ident, $($feature:tt),+) => {
+            cpufeatures::new!($name, $($feature),+);
+            if !$name::get() {
+                return;
+            }
+        };
+    }
+
     #[test]
     fn test_avx2() {
-        let mut rng = rand::thread_rng();
-        let mut x = vec![[0u8; 64]; 2];
+        require!(has_avx2, "avx2");
+
+        let mut rng = rand::rng();
+        let mut x = [[0u8; 64]; 2];
         rng.fill::<[u8]>(x.as_flattened_mut());
-        let mut x_clone = x.clone();
+        let mut x_clone = x;
 
         let avx2 = Avx2::new();
         let nosimd = NoSimd::new();
@@ -510,10 +525,12 @@ mod tests {
 
     #[test]
     fn test_mul() {
-        let mut rng = rand::thread_rng();
-        let mut x = vec![[0u8; 64]; 2];
+        require!(has_avx512, "avx512f", "avx512vl", "avx512bw");
+
+        let mut rng = rand::rng();
+        let mut x = [[0u8; 64]; 2];
         rng.fill::<[u8]>(x.as_flattened_mut());
-        let mut x_clone = x.clone();
+        let mut x_clone = x;
 
         let avx512 = Avx512::new();
         let nosimd = NoSimd::new();
@@ -526,10 +543,12 @@ mod tests {
 
     #[test]
     fn test_mul_64() {
-        let mut rng = rand::thread_rng();
-        let mut x = vec![[0u8; 64]; 1];
+        require!(has_avx512, "avx512f", "avx512vl", "avx512bw");
+
+        let mut rng = rand::rng();
+        let mut x = [[0u8; 64]; 1];
         rng.fill::<[u8]>(x.as_flattened_mut());
-        let mut x_clone = x.clone();
+        let mut x_clone = x;
 
         let avx512 = Avx512::new();
         let nosimd = NoSimd::new();
@@ -542,15 +561,17 @@ mod tests {
 
     #[test]
     fn test_ifft_butterfly_partial() {
+        require!(has_avx512, "avx512f", "avx512vl", "avx512bw");
+
         let mut rng = ChaCha8Rng::from_seed([0; 32]);
-        let mut x = vec![[0u8; 64]; 4];
-        let mut y = vec![[0u8; 64]; 4];
+        let mut x = [[0u8; 64]; 4];
+        let mut y = [[0u8; 64]; 4];
 
         rng.fill::<[u8]>(x.as_flattened_mut());
         rng.fill::<[u8]>(y.as_flattened_mut());
 
-        let mut x_clone = x.clone();
-        let mut y_clone = y.clone();
+        let mut x_clone = x;
+        let mut y_clone = y;
 
         let avx512 = Avx512::new();
         let nosimd = NoSimd::new();
@@ -564,15 +585,17 @@ mod tests {
 
     #[test]
     fn test_ifft_butterfly_partial_64() {
+        require!(has_avx512, "avx512f", "avx512vl", "avx512bw");
+
         let mut rng = ChaCha8Rng::from_seed([0; 32]);
-        let mut x = vec![[0u8; 64]; 1];
-        let mut y = vec![[0u8; 64]; 1];
+        let mut x = [[0u8; 64]; 1];
+        let mut y = [[0u8; 64]; 1];
 
         rng.fill::<[u8]>(x.as_flattened_mut());
         rng.fill::<[u8]>(y.as_flattened_mut());
 
-        let mut x_clone = x.clone();
-        let mut y_clone = y.clone();
+        let mut x_clone = x;
+        let mut y_clone = y;
 
         let avx512 = Avx512::new();
         let nosimd = NoSimd::new();
@@ -586,15 +609,17 @@ mod tests {
 
     #[test]
     fn test_fft_butterfly_partial() {
+        require!(has_avx512, "avx512f", "avx512vl", "avx512bw");
+
         let mut rng = ChaCha8Rng::from_seed([0; 32]);
-        let mut x = vec![[0u8; 64]; 4];
-        let mut y = vec![[0u8; 64]; 4];
+        let mut x = [[0u8; 64]; 4];
+        let mut y = [[0u8; 64]; 4];
 
         rng.fill::<[u8]>(x.as_flattened_mut());
         rng.fill::<[u8]>(y.as_flattened_mut());
 
-        let mut x_clone = x.clone();
-        let mut y_clone = y.clone();
+        let mut x_clone = x;
+        let mut y_clone = y;
 
         let avx512 = Avx512::new();
         let nosimd = NoSimd::new();
@@ -608,15 +633,17 @@ mod tests {
 
     #[test]
     fn test_fft_butterfly_partial_64() {
+        require!(has_avx512, "avx512f", "avx512vl", "avx512bw");
+
         let mut rng = ChaCha8Rng::from_seed([0; 32]);
-        let mut x = vec![[0u8; 64]; 1];
-        let mut y = vec![[0u8; 64]; 1];
+        let mut x = [[0u8; 64]; 1];
+        let mut y = [[0u8; 64]; 1];
 
         rng.fill::<[u8]>(x.as_flattened_mut());
         rng.fill::<[u8]>(y.as_flattened_mut());
 
-        let mut x_clone = x.clone();
-        let mut y_clone = y.clone();
+        let mut x_clone = x;
+        let mut y_clone = y;
 
         let avx512 = Avx512::new();
         let nosimd = NoSimd::new();

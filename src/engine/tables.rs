@@ -4,18 +4,21 @@
 //!
 //! # Tables
 //!
-//! | Table        | Size    | Used in encoding | Used in decoding | By engines         |
-//! | ------------ | ------- | ---------------- | ---------------- | ------------------ |
-//! | [`Exp`]      | 128 kiB | yes              | yes              | all                |
-//! | [`Log`]      | 128 kiB | yes              | yes              | all                |
-//! | [`LogWalsh`] | 128 kiB | -                | yes              | all                |
-//! | [`Mul16`]    | 8 MiB   | yes              | yes              | [`NoSimd`]         |
-//! | [`Mul128`]   | 8 MiB   | yes              | yes              | [`Avx2`] [`Ssse3`] |
-//! | [`Skew`]     | 128 kiB | yes              | yes              | all                |
+//! | Table        | Size    | Used in encoding | Used in decoding | By engines                  |
+//! | ------------ | ------- | ---------------- | ---------------- | --------------------------- |
+//! | [`Exp`]      | 128 kiB | yes              | yes              | all                         |
+//! | [`Log`]      | 128 kiB | yes              | yes              | all                         |
+//! | [`LogWalsh`] | 128 kiB | -                | yes              | all                         |
+//! | [`Mul16`]    | 8 MiB   | yes              | yes              | [`NoSimd`]                  |
+//! | [`Mul128`]   | 8 MiB   | yes              | yes              | [`Avx2`] [`Ssse3`]          |
+//! | [`MulGfni`]  | 2 MiB   | yes              | yes              | [`Avx2Gfni`] [`Avx512Gfni`] |
+//! | [`Skew`]     | 128 kiB | yes              | yes              | all                         |
 //!
 //! [`NoSimd`]: crate::engine::NoSimd
 //! [`Avx2`]: crate::engine::Avx2
 //! [`Ssse3`]: crate::engine::Ssse3
+//! [`Avx2Gfni`]: crate::engine::Avx2Gfni
+//! [`Avx512Gfni`]: crate::engine::Avx512Gfni
 //! [`Engine`]: crate::engine
 //!
 
@@ -62,6 +65,41 @@ pub struct Multiply128lutT {
     pub lo: [u128; 4],
     /// Upper half of `GfElements`
     pub hi: [u128; 4],
+}
+
+/// Used by the [`Avx2Gfni`] and [`Avx512Gfni`] engines for multiplications.
+///
+/// [`Avx2Gfni`]: crate::engine::Avx2Gfni
+/// [`Avx512Gfni`]: crate::engine::Avx512Gfni
+pub type MulGfni = [Multiply64GfniT; GF_ORDER];
+
+/// Elements of the [`MulGfni`] table.
+///
+/// Multiplication of a [`GfElement`] by a constant is a `GF(2)`-linear map on
+/// the 16 bits of the element, so it can be written as a 16x16 bit matrix.
+/// Splitting that matrix into four 8x8 blocks gives
+///
+/// ```text
+/// product_lo = lo_from_lo * value_lo + lo_from_hi * value_hi
+/// product_hi = hi_from_lo * value_lo + hi_from_hi * value_hi
+/// ```
+///
+/// where each 8x8 block is exactly what one `vgf2p8affineqb` byte-lane
+/// multiplication computes.
+///
+/// Each matrix is stored in the layout `vgf2p8affineqb` expects: byte `k`
+/// (counting from the least significant byte of the `u64`) holds the row
+/// producing output bit `7 - k`, and bit `j` of that row selects input bit `j`.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Multiply64GfniT {
+    /// Low output byte, low input byte.
+    pub lo_from_lo: u64,
+    /// Low output byte, high input byte.
+    pub lo_from_hi: u64,
+    /// High output byte, low input byte.
+    pub hi_from_lo: u64,
+    /// High output byte, high input byte.
+    pub hi_from_hi: u64,
 }
 
 /// Used by all [`Engine`]:s in [`Engine::eval_poly`].
@@ -147,6 +185,20 @@ pub fn get_mul128() -> &'static Mul128 {
     {
         static MUL128: OnceBox<Mul128> = OnceBox::new();
         MUL128.get_or_init(initialize_mul128)
+    }
+}
+
+/// Lazily initialized multiplication table for the GFNI engines.
+pub fn get_mul_gfni() -> &'static MulGfni {
+    #[cfg(feature = "std")]
+    {
+        static MUL_GFNI: LazyLock<Box<MulGfni>> = LazyLock::new(initialize_mul_gfni);
+        &MUL_GFNI
+    }
+    #[cfg(not(feature = "std"))]
+    {
+        static MUL_GFNI: OnceBox<MulGfni> = OnceBox::new();
+        MUL_GFNI.get_or_init(initialize_mul_gfni)
     }
 }
 
@@ -281,6 +333,58 @@ fn initialize_mul128() -> Box<Mul128> {
     mul128.into_boxed_slice().try_into().unwrap()
 }
 
+/// Packs an 8x8 `GF(2)` matrix, given as the images of the eight input bits,
+/// into the `u64` layout used by `vgf2p8affineqb`.
+///
+/// `columns[j]` is the output byte produced by input bit `j` alone.
+fn gfni_matrix(columns: [u8; 8]) -> u64 {
+    let mut matrix = 0u64;
+
+    for out_bit in 0..8 {
+        let mut row = 0u64;
+        for (in_bit, column) in columns.iter().enumerate() {
+            row |= u64::from((column >> out_bit) & 1) << in_bit;
+        }
+        // Byte `k` of the qword holds the row for output bit `7 - k`.
+        matrix |= row << (8 * (7 - out_bit));
+    }
+
+    matrix
+}
+
+fn initialize_mul_gfni() -> Box<MulGfni> {
+    let exp = &get_exp_log().exp;
+    let log = &get_exp_log().log;
+
+    let mut mul_gfni = vec![Multiply64GfniT::default(); GF_ORDER];
+
+    for log_m in 0..=GF_MODULUS {
+        let mut lo_from_lo = [0u8; 8];
+        let mut lo_from_hi = [0u8; 8];
+        let mut hi_from_lo = [0u8; 8];
+        let mut hi_from_hi = [0u8; 8];
+
+        for bit in 0..8 {
+            let from_lo = mul(1 << bit, log_m, exp, log);
+            lo_from_lo[bit] = from_lo as u8;
+            hi_from_lo[bit] = (from_lo >> 8) as u8;
+
+            let from_hi = mul(1 << (bit + 8), log_m, exp, log);
+            lo_from_hi[bit] = from_hi as u8;
+            hi_from_hi[bit] = (from_hi >> 8) as u8;
+        }
+
+        mul_gfni[log_m as usize] = Multiply64GfniT {
+            lo_from_lo: gfni_matrix(lo_from_lo),
+            lo_from_hi: gfni_matrix(lo_from_hi),
+            hi_from_lo: gfni_matrix(hi_from_lo),
+            hi_from_hi: gfni_matrix(hi_from_hi),
+        };
+    }
+
+    mul_gfni.into_boxed_slice().try_into().unwrap()
+}
+
 #[allow(clippy::needless_range_loop)]
 fn initialize_skew() -> Box<Skew> {
     let exp = &get_exp_log().exp;
@@ -321,4 +425,72 @@ fn initialize_skew() -> Box<Skew> {
     }
 
     skew
+}
+
+// ======================================================================
+// FUNCTIONS - CRATE - test support
+
+/// Scalar model of one `vgf2p8affineqb` byte lane, following the pseudo code
+/// in Intel's intrinsics guide.
+///
+/// Lets the GFNI engines have their table and lane arrangement checked on
+/// hosts without GFNI.
+#[cfg(test)]
+pub(crate) fn gfni_affine(matrix: u64, x: u8) -> u8 {
+    let mut result = 0u8;
+
+    for bit in 0..8 {
+        let row = matrix.to_le_bytes()[bit];
+        result |= ((row & x).count_ones() as u8 % 2) << (7 - bit);
+    }
+
+    result
+}
+
+// ======================================================================
+// TESTS
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use alloc::vec::Vec;
+    use gfni_affine as affine;
+
+    // The GFNI table must reproduce `mul()` for every `log_m`.
+    #[test]
+    fn mul_gfni_matches_mul() {
+        let exp = &get_exp_log().exp;
+        let log = &get_exp_log().log;
+        let mul_gfni = get_mul_gfni();
+
+        // Exhaustive over `log_m`, sampled over the values being multiplied.
+        // Multiplication by a constant is `GF(2)`-linear, so agreeing on a
+        // spanning set is enough, and these samples cover one.
+        let values: Vec<GfElement> = (0..16)
+            .map(|bit| 1 << bit)
+            .chain([0, 1, 0x1234, 0xabcd, 0xffff, 0x8001])
+            .collect();
+
+        for log_m in 0..=GF_MODULUS {
+            let lut = &mul_gfni[log_m as usize];
+
+            for &value in &values {
+                let (value_lo, value_hi) = (value as u8, (value >> 8) as u8);
+
+                let product_lo =
+                    affine(lut.lo_from_lo, value_lo) ^ affine(lut.lo_from_hi, value_hi);
+                let product_hi =
+                    affine(lut.hi_from_lo, value_lo) ^ affine(lut.hi_from_hi, value_hi);
+
+                let product = GfElement::from(product_lo) | GfElement::from(product_hi) << 8;
+
+                assert_eq!(
+                    product,
+                    mul(value, log_m, exp, log),
+                    "log_m {log_m}, value {value}"
+                );
+            }
+        }
+    }
 }
