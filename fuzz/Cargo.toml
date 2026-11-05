@@ -1,0 +1,40 @@
+[package]
+name = "reed-solomon-simd-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+arbitrary = { version = "1.4", features = ["derive"] }
+libfuzzer-sys = "0.4"
+
+[dependencies.reed-solomon-simd]
+path = ".."
+
+# Keep the fuzz crate out of any parent workspace.
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "roundtrip"
+path = "fuzz_targets/roundtrip.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "api_sequence"
+path = "fuzz_targets/api_sequence.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "engine_diff"
+path = "fuzz_targets/engine_diff.rs"
+test = false
+doc = false
+bench = false
