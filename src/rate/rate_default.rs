@@ -164,6 +164,9 @@ impl<E: Engine> RateEncoder<E> for DefaultRateEncoder<E> {
         recovery_count: usize,
         shard_bytes: usize,
     ) -> Result<(), Error> {
+        // Validate everything before `mem::take` below, so that an invalid
+        // configuration returns an error without leaving `self.0` as `None`.
+        DefaultRate::<E>::validate(original_count, recovery_count, shard_bytes)?;
         let new_rate_is_high = use_high_rate(original_count, recovery_count)?;
 
         self.0 = match core::mem::take(&mut self.0) {
@@ -308,6 +311,9 @@ impl<E: Engine> RateDecoder<E> for DefaultRateDecoder<E> {
         recovery_count: usize,
         shard_bytes: usize,
     ) -> Result<(), Error> {
+        // Validate everything before `mem::take` below, so that an invalid
+        // configuration returns an error without leaving `self.0` as `None`.
+        DefaultRate::<E>::validate(original_count, recovery_count, shard_bytes)?;
         let new_rate_is_high = use_high_rate(original_count, recovery_count)?;
 
         self.0 = match core::mem::take(&mut self.0) {
@@ -356,7 +362,10 @@ impl<E: Engine> RateDecoder<E> for DefaultRateDecoder<E> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_util;
+    #[cfg(not(feature = "std"))]
+    use alloc::vec::Vec;
+
+    use crate::{engine::NoSimd, test_util};
 
     // ============================================================
     // ROUNDTRIPS - SINGLE ROUND
@@ -428,6 +437,71 @@ mod tests {
             (2, 3, 1024, test_util::LOW_2_3, &[], &[0, 2], 123),
             (3, 5, 1024, test_util::LOW_3_5, &[], &[0, 2, 4], 135),
         );
+    }
+
+    // ============================================================
+    // RESET WITH INVALID SHARD SIZE
+    //
+    // Regression: a `reset` that switched rate (high <-> low) with an invalid
+    // `shard_bytes` returned `Err` but left the encoder/decoder in the internal
+    // `None` state, so the next call panicked with `unreachable!()`.
+
+    // (original_count, recovery_count) for initial high rate, then low rate
+    // and vice versa.
+    const RATE_SWITCHES: [((usize, usize), (usize, usize)); 2] =
+        [((3, 2), (2, 3)), ((2, 3), (3, 2))];
+
+    fn roundtrip_with(
+        encoder: &mut DefaultRateEncoder<NoSimd>,
+        decoder: &mut DefaultRateDecoder<NoSimd>,
+        original_count: usize,
+        recovery_count: usize,
+        shard_bytes: usize,
+    ) {
+        let original: Vec<Vec<u8>> = (0..original_count)
+            .map(|i| (0..shard_bytes).map(|j| (i * 31 + j) as u8).collect())
+            .collect();
+
+        for shard in &original {
+            encoder.add_original_shard(shard).unwrap();
+        }
+        let result = encoder.encode().unwrap();
+        let recovery: Vec<&[u8]> = result.recovery_iter().collect();
+        assert_eq!(recovery.len(), recovery_count);
+
+        // Drop original shard 0, replace it with recovery shard 0.
+        for (i, shard) in original.iter().enumerate().skip(1) {
+            decoder.add_original_shard(i, shard).unwrap();
+        }
+        decoder.add_recovery_shard(0, recovery[0]).unwrap();
+        let result = decoder.decode().unwrap();
+        assert_eq!(result.restored_original(0).unwrap(), &original[0][..]);
+    }
+
+    #[test]
+    fn reset_invalid_shard_size_keeps_state() {
+        for ((oc1, rc1), (oc2, rc2)) in RATE_SWITCHES {
+            for bad_shard_bytes in [0, 3] {
+                let mut encoder =
+                    DefaultRateEncoder::new(oc1, rc1, 64, NoSimd::new(), None).unwrap();
+                let mut decoder =
+                    DefaultRateDecoder::new(oc1, rc1, 64, NoSimd::new(), None).unwrap();
+
+                let expected = Err(Error::InvalidShardSize {
+                    shard_bytes: bad_shard_bytes,
+                });
+                assert_eq!(encoder.reset(oc2, rc2, bad_shard_bytes), expected);
+                assert_eq!(decoder.reset(oc2, rc2, bad_shard_bytes), expected);
+
+                // Failed reset leaves previous configuration usable.
+                roundtrip_with(&mut encoder, &mut decoder, oc1, rc1, 64);
+
+                // Subsequent valid reset (with rate switch) works.
+                encoder.reset(oc2, rc2, 128).unwrap();
+                decoder.reset(oc2, rc2, 128).unwrap();
+                roundtrip_with(&mut encoder, &mut decoder, oc2, rc2, 128);
+            }
+        }
     }
 
     // ============================================================
