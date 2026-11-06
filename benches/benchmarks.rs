@@ -168,6 +168,9 @@ fn benchmarks_rate_one<E: Engine>(c: &mut Criterion, name: &str, new_engine: fn(
         (1025, 2048),
         (2048, 1025),
         (2048, 2048),
+        // HighRateEncoder fuses its top IFFT/FFT stage for these
+        (1024, 3072),
+        (4096, 12288),
     ] {
         let original = generate_shards(original_count, SHARD_BYTES, 0);
         let recovery =
