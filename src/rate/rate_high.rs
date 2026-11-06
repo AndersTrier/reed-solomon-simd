@@ -545,7 +545,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn fused_top_stage_4096_12288() {
         assert_fused_all_engines(
             4096,
