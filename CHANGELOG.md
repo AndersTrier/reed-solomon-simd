@@ -38,3 +38,6 @@
 - `no_std` support when new `std` feature is disabled (`std` feature is enabled by default).
 - Require Rust 1.82.0 or newer
 - Implement trait `ExactSizeIterator` for `EncoderResult` and `DecoderResult` iterators.
+
+## Unreleased
+- Require Rust 1.89.0 or newer
