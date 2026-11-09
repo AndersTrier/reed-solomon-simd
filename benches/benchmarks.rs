@@ -13,7 +13,7 @@ use reed_solomon_simd::{
 };
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-use reed_solomon_simd::engine::{Avx2, Ssse3};
+use reed_solomon_simd::engine::{Avx2, Avx2Gfni, Ssse3};
 
 #[cfg(target_arch = "aarch64")]
 use reed_solomon_simd::engine::Neon;
@@ -311,6 +311,9 @@ fn benchmarks_engine(c: &mut Criterion) {
         }
         if is_x86_feature_detected!("avx2") {
             benchmarks_engine_one(c, "engine-Avx2", Avx2::new());
+        }
+        if is_x86_feature_detected!("avx2") && is_x86_feature_detected!("gfni") {
+            benchmarks_engine_one(c, "engine-Avx2Gfni", Avx2Gfni::new());
         }
     }
 

@@ -40,4 +40,7 @@
 - Implement trait `ExactSizeIterator` for `EncoderResult` and `DecoderResult` iterators.
 
 ## Unreleased
+- `Avx2Gfni` engine, which evaluates a multiplication as a `GF(2)` matrix product with
+  `vgf2p8affineqb` instead of four `vpshufb` nibble table lookups. `DefaultEngine` prefers it
+  when AVX2 and GFNI are available.
 - Require Rust 1.89.0 or newer

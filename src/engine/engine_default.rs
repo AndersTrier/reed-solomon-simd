@@ -3,7 +3,7 @@ use crate::engine::{Engine, GfElement, NoSimd, ShardsRefMut, GF_ORDER};
 use alloc::boxed::Box;
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-use crate::engine::{Avx2, Ssse3};
+use crate::engine::{Avx2, Avx2Gfni, Ssse3};
 
 #[cfg(target_arch = "aarch64")]
 use crate::engine::Neon;
@@ -18,9 +18,10 @@ impl DefaultEngine {
     /// Creates new [`DefaultEngine`] by chosing and initializing the underlying engine.
     ///
     /// On x86(-64) the engine is chosen in the following order of preference:
-    /// 1. [`Avx2`]
-    /// 2. [`Ssse3`]
-    /// 3. [`NoSimd`]
+    /// 1. [`Avx2Gfni`]
+    /// 2. [`Avx2`]
+    /// 3. [`Ssse3`]
+    /// 4. [`NoSimd`]
     ///
     /// On `AArch64` the engine is chosen in the following order of preference:
     /// 1. [`Neon`]
@@ -28,6 +29,11 @@ impl DefaultEngine {
     pub fn new() -> Self {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
+            cpufeatures::new!(has_avx2_gfni, "avx2", "gfni");
+            if has_avx2_gfni::get() {
+                return Self(Box::new(Avx2Gfni::new()));
+            }
+
             cpufeatures::new!(has_avx2, "avx2");
             if has_avx2::get() {
                 return Self(Box::new(Avx2::new()));
